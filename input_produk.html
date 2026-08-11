@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Produk</title>
+    <link rel="stylesheet" href="input_produk.css">
+</head>
+<body>
+
+<div class="glass-form">
+    <h2>Tambah Produk</h2>
+
+    <div class="input-group">
+        <label>Nama Produk</label>
+        <input type="text" id="nama" placeholder="Contoh: Ayam Geprek">
+    </div>
+
+    <div class="input-group">
+        <label>Deskripsi</label>
+        <textarea id="deskripsi" rows="3" placeholder="Deskripsi produk..."></textarea>
+    </div>
+
+    <div class="input-group">
+        <label>Harga</label>
+        <input type="text" id="harga" placeholder="Contoh: 18k">
+    </div>
+
+    <div class="input-group">
+        <label>Foto Produk</label>
+        <input type="file" id="gambar" accept="image/*">
+        <div class="preview" id="previewBox">
+            <img id="previewImg">
+        </div>
+    </div>
+
+    <button class="btn-save" id="btnSubmit">
+        Simpan Produk
+    </button>
+
+    <p id="status"></p>
+</div>
+
+<script src="input_produk.js"></script>
+
+</body>
+</html>

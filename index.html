@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login & Daftar - Pemesanan Makanan</title>
+    <link rel="stylesheet" href="index_style.css">
+    <style>
+        .submit-btn:disabled {
+            background: #ccc !important;
+            cursor: not-allowed;
+            box-shadow: none !important;
+        }
+
+        /* ==========================================================================
+           GAYA TAMBAHAN UNTUK IMAGE SLIDER
+           ========================================================================== */
+        .landing-header {
+            position: relative; /* Wajib agar slide dan overlay bisa memposisikan diri */
+            overflow: hidden;   /* Menyembunyikan gambar yang keluar jalur radius */
+            padding: 60px 20px 40px;
+            text-align: center;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            margin-bottom: 30px;
+            min-height: 220px;
+        }
+
+        /* Container utama slide */
+        .slider-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        /* Pengaturan tiap gambar slide */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 1s ease-in-out; /* Efek transisi halus saat berganti foto */
+        }
+
+        /* Menampilkan slide yang aktif */
+        .slide.active {
+            opacity: 1;
+        }
+
+        /* Lapisan Gelap/Gradasi transparan agar teks putih tetap kontras & terbaca */
+        .slider-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 126, 95, 0.75), rgba(45, 26, 22, 0.75));
+            z-index: 1;
+        }
+
+        /* Konten teks harus berada di lapisan paling atas */
+        .header-content {
+            position: relative;
+            z-index: 2;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <header class="landing-header">
+        <div class="slider-container">
+            <div class="slide active" style="background-image: url('https://i.pinimg.com/1200x/d3/7b/f1/d37bf17c96e03b533f0f4b1c9b130011.jpg');"></div>
+            <div class="slide" style="background-image: url('https://i.pinimg.com/1200x/3f/6f/d5/3f6fd55b47e3d64712d39be435cecbad.jpg');"></div>
+            <div class="slide" style="background-image: url('https://i.pinimg.com/736x/a6/02/56/a60256f8d4f3e6773fbcfb9c1fbec35c.jpg');"></div>
+        </div>
+        
+        <div class="slider-overlay"></div>
+
+        <div class="header-content">
+            <span class="emoji"></span>
+            <h1>Teras 20</h1>
+            <p>Pesan makanan favoritmu dengan cepat dan mudah!</p>
+        </div>
+    </header>
+
+    <div class="auth-toggle">
+        <button class="toggle-btn active" id="btn-login" onclick="switchTab('login')">Masuk</button>
+        <button class="toggle-btn" id="btn-register" onclick="switchTab('register')">Daftar</button>
+    </div>
+
+    <div class="form-container">
+        
+        <form id="form-login" class="auth-form active">
+            <div class="input-group">
+                <label for="login-email">Email</label>
+                <input type="email" id="login-email" placeholder="contoh@email.com" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="login-password">Kata Sandi</label>
+                <input type="password" id="login-password" placeholder="Masukkan kata sandi" required>
+            </div>
+
+            <a href="#" class="forgot-password">Lupa Kata Sandi?</a>
+
+            <button type="submit" class="submit-btn">Masuk Sekarang</button>
+        </form>
+
+        <form id="form-register" class="auth-form">
+            <div class="input-group">
+                <label for="reg-name">Nama Lengkap</label>
+                <input type="text" id="reg-name" placeholder="Misal: Gita Astiya" required>
+            </div>
+
+            <div class="input-group">
+                <label for="reg-email">Email</label>
+                <input type="email" id="reg-email" placeholder="contoh@email.com" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="reg-password">Kata Sandi</label>
+                <input type="password" id="reg-password" placeholder="Buat kata sandi minimal 6 karakter" minlength="6" required>
+            </div>
+
+            <button type="submit" class="submit-btn">Buat Akun</button>
+        </form>
+
+    </div>
+
+</div>
+
+<script src="index.js"></script>
+
+</body>
+</html>

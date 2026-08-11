@@ -1,0 +1,184 @@
+/* Proteksi tambahan untuk browser yang bandel */
+html {
+    background-color: #ffffff !important;
+    color-scheme: light only;
+    color: #000000 !important;
+}
+
+/* Mematikan fitur invert warna otomatis pada semua elemen */
+* {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-color: #e96711 #ffffff;
+}
+/* === RESET & VARIABEL === */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f4f7f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+/* === CONTAINER APLIKASI === */
+.app-container {
+    width: 100%;
+    max-width: 400px;
+    background-color: #ffffff;
+    min-height: 100vh;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 450px) {
+    .app-container {
+        min-height: 800px;
+        border-radius: 30px;
+        margin: 20px 0;
+    }
+}
+
+/* === HEADER LANDING PAGE === */
+.landing-header {
+    background: linear-gradient(135deg, #e2a76f 0%, #8b5a2b 100%);
+    color: white;
+    padding: 60px 20px 40px;
+    text-align: center;
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    margin-bottom: 30px;
+}
+
+.landing-header h1 {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+
+.landing-header .emoji {
+    font-size: 50px;
+    margin-bottom: 15px;
+    display: inline-block;
+}
+
+.landing-header p {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* === TOGGLE MENU (LOGIN / DAFTAR) === */
+.auth-toggle {
+    display: flex;
+    justify-content: center;
+    margin: 0 20px 20px;
+    background: #f0f0f0;
+    border-radius: 30px;
+    padding: 5px;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 12px 0;
+    border: none;
+    background: transparent;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #777;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.toggle-btn.active {
+    background: #cc4a0e;
+    color: white;
+    box-shadow: 0 4px 10px rgba(255, 126, 95, 0.3);
+}
+
+/* === FORM CONTAINER === */
+.form-container {
+    padding: 0 30px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.auth-form {
+    display: none;
+    flex-direction: column;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+.auth-form.active {
+    display: flex;
+}
+
+/* Input Styling */
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 14px;
+    transition: all 0.3s;
+    outline: none;
+}
+
+.input-group input:focus {
+    border-color: #8b5a2b;
+    box-shadow: 0 0 0 3px rgba(255, 126, 95, 0.1);
+}
+
+/* Tombol Aksi */
+.submit-btn {
+    background: #cc4a0e;
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.submit-btn:hover {
+    background: #e66a4f;
+}
+
+/* Lupa Password */
+.forgot-password {
+    text-align: right;
+    font-size: 12px;
+    color: #ff7e5f;
+    margin-top: -5px;
+    margin-bottom: 15px;
+    text-decoration: none;
+}
+
+/* Animasi */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -1,0 +1,256 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: #f4f6f9;
+    color: #333333;
+    min-height: 100vh;
+    padding: 20px 15px;
+    display: flex;
+    justify-content: center;
+}
+
+.app-container {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Header Navigasi */
+.header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 5px;
+}
+
+.btn-kembali-header {
+    background-color: #7f8c8d;
+    color: #ffffff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.header h2 {
+    font-size: 18px;
+    color: #2c3e50;
+}
+
+/* Section Cards */
+.section-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.section-card h3 {
+    font-size: 14px;
+    color: #2c3e50;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 6px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #555555;
+    margin-bottom: 4px;
+}
+
+/* Items List */
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px dashed #eee;
+    padding-bottom: 8px;
+}
+
+.order-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.item-detail h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.item-detail p {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.item-price {
+    font-weight: 600;
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+.divider {
+    height: 1px;
+    background: #eeeeee;
+    margin: 12px 0;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #e74c3c;
+    margin-top: 6px;
+}
+
+/* Option Cards (Metode Pembayaran) */
+.payment-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.payment-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    background: #f9f9f9;
+    border: 1px solid #dddddd;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.payment-card:hover {
+    border-color: #2ecc71;
+}
+
+.payment-card.active {
+    border-color: #2ecc71;
+    background: #e8f8f5;
+}
+
+.payment-card input[type="radio"] {
+    accent-color: #2ecc71;
+    width: 16px;
+    height: 16px;
+}
+
+.payment-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.payment-info span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333333;
+}
+
+.payment-info small {
+    color: #7f8c8d;
+    font-size: 11px;
+}
+
+/* Payment Detail Boxes */
+.qris-box, .tunai-box {
+    margin-top: 12px;
+    padding: 14px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 13px;
+    color: #333333;
+}
+
+#qris-image {
+    width: 180px;
+    height: 180px;
+    border-radius: 8px;
+    margin: 10px 0;
+    border: 2px solid #2ecc71;
+}
+
+.qris-note {
+    display: block;
+    color: #d35400;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* Textarea Catatan */
+textarea {
+    width: 100%;
+    height: 70px;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 8px;
+    color: #333333;
+    padding: 10px;
+    font-size: 13px;
+    resize: none;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #2ecc71;
+}
+
+/* Tombol Selesaikan Transaksi */
+.btn-checkout {
+    background: #2ecc71;
+    border: none;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 14px;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+    width: 100%;
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.2);
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin-top: 10px;
+}
+
+.btn-checkout:hover {
+    background: #27ae60;
+}
+
+.btn-checkout:active {
+    transform: scale(0.98);
+}
+
+.btn-checkout:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    box-shadow: none;
+}
