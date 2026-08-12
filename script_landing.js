@@ -1,5 +1,5 @@
 // --- KONFIGURASI ---
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec";
 let cachedData = []; // Untuk optimasi kecepatan
 
 /**
@@ -17,6 +17,9 @@ function convertDriveUrl(url) {
  * FUNGSI BADGE & SINKRONISASI KERANJANG
  ************************************************/
 
+/**
+ * Memperbarui angka notifikasi merah pada badge keranjang
+ */
 /**
  * Memperbarui angka notifikasi merah pada badge keranjang
  */
@@ -66,7 +69,6 @@ function updateCartBadge() {
     badge.style.display = 'none'; // Menyembunyikan jika kosong
   }
 }
-
 /**
  * Sinkronisasi data keranjang dari Spreadsheet Google Apps Script
  */
@@ -244,7 +246,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const greetingElement = document.getElementById('user-greeting');
     
-    // 2. CEK JALUR LOGIN QR CODE (Menggunakan GET Request ke Apps Script)
+    // 2. CEK JALUR LOGIN QR CODE TERLEBIH DAHULU
     const urlParams = new URLSearchParams(window.location.search);
     const qrUserId = urlParams.get('userId');
 
@@ -252,8 +254,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (greetingElement) greetingElement.innerText = "Mengautentikasi...";
         
         try {
-            // Permintaan GET ke doGet(e) Apps Script
-            const response = await fetch(`${APPS_SCRIPT_URL}?action=login_qr&userId=${encodeURIComponent(qrUserId)}`);
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "login_qr",
+                    userId: qrUserId
+                })
+            });
             const data = await response.json();
 
             if (data.success) {
@@ -262,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (greetingElement) greetingElement.innerText = `Hallo ${data.user.nama} !`;
                 
-                // Bersihkan query string parameter ?userId=... di URL agar lebih rapi
+                // Bersihkan query string parameter di URL
                 window.history.replaceState({}, document.title, window.location.pathname);
                 
                 // Sinkronkan data keranjang user dari spreadsheet
