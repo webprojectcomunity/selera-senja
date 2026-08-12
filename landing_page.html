@@ -8,6 +8,7 @@
 </head>
 <body>
 
+<!-- Kontainer Utama Berwarna Putih -->
 <div class="app-container">
 
     <header class="header">
@@ -32,6 +33,7 @@
         </button>
     </div>
 
+    <!-- Konten Produk Berada di Dalam App Container Putih -->
     <div class="food-grid" id="product-grid">
         <p style="grid-column: span 2; text-align:center; color:#1a0f08; font-weight:600;">Memuat menu...</p>
     </div>
@@ -45,28 +47,26 @@
             <span>Home</span>
         </div>
         
-     <a href="chart.html" class="nav-item" style="text-decoration: none; color: inherit; cursor: pointer; position: relative;">
-    <div style="position: relative; display: inline-block;">
-        <svg viewBox="0 0 24 24" width="24" height="24">
-            <rect x="6" y="7" width="12" height="12" rx="2"></rect>
-            <path d="M9 7V5a3 3 0 0 1 6 0v2"></path>
-        </svg>
+        <a href="chart.html" class="nav-item" style="text-decoration: none; color: inherit; cursor: pointer; position: relative;">
+            <div style="position: relative; display: inline-block;">
+                <svg viewBox="0 0 24 24" width="24" height="24">
+                    <rect x="6" y="7" width="12" height="12" rx="2"></rect>
+                    <path d="M9 7V5a3 3 0 0 1 6 0v2"></path>
+                </svg>
+                <span id="cart-badge" class="cart-badge" style="display: none;">0</span>
+            </div>
+            <span>Cart</span>
+        </a>
         
-        <!-- Span Badge dengan class cart-badge -->
-        <span id="cart-badge" class="cart-badge" style="display: none;">0</span>
-    </div>
-    <span>Cart</span>
-</a>
-        
-      <a href="transaksi.html" class="nav-item" style="text-decoration: none; color: inherit; cursor: pointer;">
-    <svg viewBox="0 0 24 24">
-        <rect x="4" y="4" width="16" height="16" rx="2"></rect>
-        <line x1="9" y1="9" x2="15" y2="9"></line>
-        <line x1="9" y1="13" x2="15" y2="13"></line>
-        <line x1="9" y1="17" x2="13" y2="17"></line>
-    </svg>
-    <span>Orders</span>
-</a>
+        <a href="transaksi.html" class="nav-item" style="text-decoration: none; color: inherit; cursor: pointer;">
+            <svg viewBox="0 0 24 24">
+                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                <line x1="9" y1="9" x2="15" y2="9"></line>
+                <line x1="9" y1="13" x2="15" y2="13"></line>
+                <line x1="9" y1="17" x2="13" y2="17"></line>
+            </svg>
+            <span>Orders</span>
+        </a>
         
         <div class="nav-item active" onclick="logout()" style="cursor: pointer;">
             <svg viewBox="0 0 24 24">
@@ -77,6 +77,16 @@
             <span>Logout</span>
         </div>
     </footer>
+
+</div>
+
+<!-- Modal Pop-Up Gambar Produk -->
+<div id="imageModal" class="image-modal-overlay" onclick="closeImageModal()">
+    <div class="image-modal-content" onclick="event.stopPropagation()">
+        <span class="image-modal-close" onclick="closeImageModal()">&times;</span>
+        <img id="modalImage" src="" alt="Detail Gambar">
+        <h3 id="modalTitle"></h3>
+    </div>
 </div>
 
 <script src="script_landing.js"></script>
