@@ -79,6 +79,28 @@ async function syncCartFromDatabase(username) {
 }
 
 /************************************************
+ * FUNGSI POP-UP GAMBAR PRODUK
+ ************************************************/
+function openImageModal(imgUrl, productName) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('modalTitle');
+    
+    if (modal && modalImg) {
+        modal.style.display = 'flex';
+        modalImg.src = imgUrl;
+        if (modalTitle) modalTitle.innerText = productName;
+    }
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/************************************************
  * FUNGSI UTAMA: Load Menu dengan Caching & Filtering
  ************************************************/
 async function loadMenu(searchQuery = '') {
@@ -119,16 +141,16 @@ async function loadMenu(searchQuery = '') {
     data.forEach(item => {
         const values = Object.values(item);
         
-        const idProduk = values[0] || ''; 
-        const nama     = values[2] || 'Tanpa Nama'; 
-        const deskripsi= values[3] || '-';
-        const harga    = values[4] || '0';
-        const img      = convertDriveUrl(values[5] || '');
+        const idProduk  = values[0] || ''; 
+        const nama      = values[2] || 'Tanpa Nama'; 
+        const deskripsi = values[3] || '-';
+        const harga     = values[4] || '0';
+        const img       = convertDriveUrl(values[5] || '');
 
         const card = `
         <div class="food-card">
             <div class="food-image-wrapper">
-                <img src="${img}" alt="${nama}" loading="lazy" onerror="this.src='https://via.placeholder.com/300x200?text=Error'">
+                <img src="${img}" alt="${nama}" loading="lazy" class="clickable-img" style="cursor: pointer;" onclick="openImageModal('${img}', '${nama.replace(/'/g, "\\'")}')" onerror="this.src='https://via.placeholder.com/300x200?text=Error'">
             </div>
             <div class="glass-content">
                 <h3>${nama}</h3>
@@ -252,6 +274,8 @@ window.addEventListener('storage', (event) => {
 window.addEventListener('cartUpdated', updateCartBadge);
 window.updateCartBadge = updateCartBadge;
 window.syncCartFromDatabase = syncCartFromDatabase;
+window.openImageModal = openImageModal;
+window.closeImageModal = closeImageModal;
 
 // Proteksi tombol back browser
 history.pushState(null, null, location.href);
