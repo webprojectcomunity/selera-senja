@@ -20,15 +20,32 @@ function convertDriveUrl(url) {
 /**
  * Memperbarui angka notifikasi merah pada badge keranjang
  */
+/**
+ * Memperbarui angka notifikasi merah pada badge keranjang
+ */
 function updateCartBadge() {
   const badge = document.getElementById('cart-badge');
   if (!badge) return;
 
-  // Membaca data dari localStorage dengan toleransi berbagai nama key
-  const rawCart = localStorage.getItem('cart') || 
-                  localStorage.getItem('keranjang') || 
-                  localStorage.getItem('cartItems');
-                  
+  // 1. Cari data keranjang dari berbagai kemungkinan key localStorage (termasuk berbasis user cache)
+  let rawCart = null;
+  
+  // Periksa kunci standar
+  rawCart = localStorage.getItem('cart') || 
+            localStorage.getItem('keranjang') || 
+            localStorage.getItem('cartItems');
+
+  // Jika belum ketemu, cari key yang berawalan 'cart_cache_' atau mengandung kata 'cart'
+  if (!rawCart) {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('cart_cache_') || key.includes('cart'))) {
+        rawCart = localStorage.getItem(key);
+        if (rawCart) break; // Ambil yang pertama kali ditemukan
+      }
+    }
+  }
+            
   let cartData = [];
   try {
     cartData = rawCart ? JSON.parse(rawCart) : [];
@@ -37,7 +54,7 @@ function updateCartBadge() {
     cartData = [];
   }
 
-  // Hitung total item (menggunakan ?? agar nilai 0 tidak terhitung sebagai 1)
+  // Hitung total item
   const totalItems = Array.isArray(cartData) 
     ? cartData.reduce((sum, item) => {
         const qty = item.jumlah ?? item.qty ?? item.quantity ?? 1;
@@ -47,12 +64,11 @@ function updateCartBadge() {
 
   if (totalItems > 0) {
     badge.innerText = totalItems > 99 ? '99+' : totalItems;
-    badge.style.display = 'flex'; // Menggunakan flex agar posisi angka tepat di tengah
+    badge.style.display = 'flex'; // Menampilkan balon merah
   } else {
-    badge.style.display = 'none';
+    badge.style.display = 'none'; // Menyembunyikan jika kosong
   }
 }
-
 /**
  * Sinkronisasi data keranjang dari Spreadsheet Google Apps Script
  */
