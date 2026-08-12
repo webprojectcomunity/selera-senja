@@ -13,7 +13,7 @@ html {
     -webkit-text-size-adjust: 100%;
     scrollbar-color: #e96711 #ffffff;
 }
-/* 1. Paksa Browser agar tidak melakukan auto-invert warna */
+
 :root {
     color-scheme: light; 
 }
@@ -27,24 +27,36 @@ html {
 }
 
 body {
-    background: linear-gradient(135deg, #e96711 0%, #8b5a2b 100%);
-    background-attachment: fixed;
+    background-color: #f4f7f6; /* Disamakan dengan latar belakang luar landing_page.css */
+    background-image: none;
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 20px;
-    /* Mencegah browser melakukan invert warna pada body */
     filter: none; 
 }
 
 .app-container {
     width: 100%;
     max-width: 400px;
-    background: #ffffff; /* Menggunakan solid white agar konsisten di semua mode */
-    padding: 25px;
-    border-radius: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    background-color: #ffffff; /* Lapisan kontainer putih solid */
+    min-height: 100vh;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    padding-bottom: 40px;
+}
+
+@media (min-width: 450px) {
+    .app-container {
+        min-height: 800px;
+        border-radius: 30px;
+        margin: 20px 0;
+    }
 }
 
 /* Detail Produk */
@@ -64,12 +76,20 @@ body {
     margin-bottom: 20px;
     display: block;
     background-color: #f0f0f0; /* Placeholder jika gambar belum loading */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
 }
 
 #harga-produk {
     font-size: 18px;
     font-weight: 800;
-    color: #d35400;
+    color: #1a0f08;
+    margin-bottom: 5px;
+}
+
+#total-harga {
+    font-size: 14px;
+    font-weight: 700;
+    color: #e96711;
     margin-bottom: 20px;
 }
 
@@ -80,8 +100,9 @@ body {
     justify-content: center;
     gap: 20px;
     margin-bottom: 25px;
-    background: #fdf2e9;
-    padding: 8px;
+    background: rgba(245, 245, 245, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 10px;
     border-radius: 15px;
 }
 
@@ -114,17 +135,23 @@ body {
     width: 100%;
     height: 80px;
     padding: 12px;
-    border: 1px solid #ddd;
+    border: 1px solid #eee;
+    background-color: #ffffff;
     border-radius: 15px;
     margin-bottom: 20px;
     resize: none;
     font-size: 14px;
     outline: none;
-    color: #333;
+    color: #1a0f08;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
+}
+
+#catatan::placeholder {
+    color: #9e9e9e;
 }
 
 #catatan:focus {
-    border-color: #e96711;
+    border-color: #25211e;
 }
 
 #btn-submit-order {
@@ -137,9 +164,11 @@ body {
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 #btn-submit-order:hover {
     background-color: #000000;
+    transform: scale(1.02);
 }
