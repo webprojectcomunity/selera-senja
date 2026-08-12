@@ -101,28 +101,57 @@ function closeImageModal() {
 }
 
 /************************************************
- * FUNGSI UTAMA: Load Menu dengan Caching & Filtering
+ * FUNGSI UTAMA: Load Menu dengan LocalStorage Cache
  ************************************************/
 async function loadMenu(searchQuery = '') {
     const grid = document.getElementById('product-grid');
     if (!grid) return;
     
-    // Ambil data dari server hanya jika cache kosong
+    // 1. Ambil data dari memory cache atau localStorage jika tersedia untuk instan render
     if (cachedData.length === 0) {
-        grid.innerHTML = '<p style="grid-column: span 2; text-align:center;">Memuat menu...</p>';
-        try {
-            const response = await fetch(APPS_SCRIPT_URL + '?action=getProducts');
-            const result = await response.json();
-            if (!result.success) throw new Error("Gagal mengambil data");
-            cachedData = result.data;
-        } catch (error) {
-            grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:red;">Gagal memuat data.</p>';
-            return;
+        const savedCache = localStorage.getItem('product_cache');
+        if (savedCache) {
+            try {
+                cachedData = JSON.parse(savedCache);
+            } catch (e) {
+                cachedData = [];
+            }
         }
     }
 
-    // Proses Filtering
-    let data = cachedData;
+    // Jika data sama sekali belum ada, tampilkan loading
+    if (cachedData.length === 0) {
+        grid.innerHTML = '<p style="grid-column: span 2; text-align:center;">Memuat menu...</p>';
+    } else {
+        // Render cepat menggunakan data cache yang ada agar pengguna tidak menunggu
+        renderProductGrid(cachedData, searchQuery, grid);
+    }
+
+    // 2. Ambil data terbaru dari server di latar belakang (Background Fetch)
+    try {
+        const response = await fetch(APPS_SCRIPT_URL + '?action=getProducts');
+        const result = await response.json();
+        if (result.success && Array.isArray(result.data)) {
+            cachedData = result.data;
+            // Simpan ke localStorage agar sesi berikutnya langsung terbuka cepat
+            localStorage.setItem('product_cache', JSON.stringify(cachedData));
+            // Render ulang dengan data paling baru dari server
+            renderProductGrid(cachedData, searchQuery, grid);
+        }
+    } catch (error) {
+        console.error('Gagal memperbarui data latar belakang:', error);
+        // Jika gagal total dan belum ada cache sama sekali, tampilkan pesan error
+        if (cachedData.length === 0) {
+            grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:red;">Gagal memuat data.</p>';
+        }
+    }
+}
+
+/**
+ * HELPER: Memisahkan logika rendering grid produk agar bisa dipanggil berkali-kali
+ */
+function renderProductGrid(sourceData, searchQuery, gridElement) {
+    let data = sourceData;
     if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase().trim();
         data = data.filter(item => 
@@ -131,13 +160,12 @@ async function loadMenu(searchQuery = '') {
         );
     }
 
-    grid.innerHTML = '';
+    gridElement.innerHTML = '';
     if (data.length === 0) {
-        grid.innerHTML = '<p style="grid-column: span 2; text-align:center;">Makanan tidak ditemukan</p>';
+        gridElement.innerHTML = '<p style="grid-column: span 2; text-align:center;">Makanan tidak ditemukan</p>';
         return;
     }
 
-    // Render ke UI
     data.forEach(item => {
         const values = Object.values(item);
         
@@ -161,7 +189,7 @@ async function loadMenu(searchQuery = '') {
                 </div>
             </div>
         </div>`;
-        grid.insertAdjacentHTML('beforeend', card);
+        gridElement.insertAdjacentHTML('beforeend', card);
     });
 }
 
