@@ -25,120 +25,76 @@ document.addEventListener('DOMContentLoaded', () => {
         btnCheckout.addEventListener('click', prosesSemuaTransaksi);
     }
 
-    // Muat data keranjang (Menggunakan Cache LocalStorage agar instan)
-    loadCartDataInstant();
+    loadCartData();
 });
 
-// --- FUNGSI AMBIL DATA DENGAN CACHE & BACKGROUND SYNC ---
-async function loadCartDataInstant() {
-    const cartList = document.getElementById('cart-list');
-    if (!cartList) return;
-
-    // 1. Coba muat data dari localStorage terlebih dahulu agar halaman terbuka instan
-    const cacheKey = `cart_cache_${namaLogIn.trim()}`;
-    const savedCache = localStorage.getItem(cacheKey);
-    
-    if (savedCache) {
-        try {
-            currentCartItems = JSON.parse(savedCache);
-            renderCartList(currentCartItems);
-        } catch (e) {
-            currentCartItems = [];
-        }
-    }
-
-    // Jika sama sekali belum ada cache, tampilkan teks loading
-    if (currentCartItems.length === 0) {
-        cartList.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat keranjang...</p>`;
-    }
-
-    // 2. Ambil data terbaru dari server di latar belakang (Background Sync)
-    await fetchAndUpdateCartFromServer(false); // false agar tidak menimpa tampilan jika sudah ada cache, kecuali ingin auto-refresh
-}
-
-async function fetchAndUpdateCartFromServer(isForcedRefresh = true) {
+// --- FUNGSI AMBIL DATA DARI SHEET 'chart' ---
+async function loadCartData() {
     const cartList = document.getElementById('cart-list');
     const totalSection = document.getElementById('total-section');
     const btnCheckout = document.getElementById('btn-checkout');
+    
+    if (!cartList) return;
 
     try {
+        // Panggil data khusus milik user yang sedang aktif login
         const resChart = await fetch(APPS_SCRIPT_URL + '?action=getCart&user=' + encodeURIComponent(namaLogIn.trim()));
         const chartResult = await resChart.json();
 
-        if (!chartResult.success || !Array.isArray(chartResult.data)) {
-            throw new Error("Gagal mengambil data valid dari server");
+        if (!chartResult.success || !Array.isArray(chartResult.data) || chartResult.data.length === 0) {
+            cartList.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Keranjang Anda kosong.</p>`;
+            currentCartItems = [];
+            if (totalSection) totalSection.style.display = 'none';
+            if (btnCheckout) btnCheckout.disabled = true;
+            return;
         }
 
         currentCartItems = chartResult.data;
-        
-        // Simpan ke localStorage khusus user ini
-        const cacheKey = `cart_cache_${namaLogIn.trim()}`;
-        localStorage.setItem(cacheKey, JSON.stringify(currentCartItems));
+        if (btnCheckout) btnCheckout.disabled = false;
 
-        // Render ulang dengan data paling fresh dari server
-        renderCartList(currentCartItems);
+        cartList.innerHTML = ''; // Bersihkan teks loading awal
+        let grandTotal = 0;
+
+        // Render baris data dari spreadsheet ke elemen HTML
+        currentCartItems.forEach((item) => {
+            // Bersihkan sisa string/titik format ribuan sheet agar parsing angka tidak menjadi NaN
+            const hargaRaw = item.harga_satuan ? item.harga_satuan.toString().replace(/[^0-9.-]/g, '') : '0';
+            const totalRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : '0';
+
+            const harga = parseFloat(hargaRaw) || 0;
+            const jumlah = parseInt(item.jumlah) || 0;
+            const totalItem = parseFloat(totalRaw) || (harga * jumlah);
+            
+            grandTotal += totalItem;
+
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'cart-item';
+            itemDiv.innerHTML = `
+                <div class="cart-info">
+                    <h4>${item.nama_produk || 'Produk'} (${item.id_produk})</h4>
+                    <p>Harga Satuan: Rp ${harga.toLocaleString('id-ID')}</p>
+                    <p>Jumlah: <strong>${jumlah}</strong> pcs</p>
+                    ${item.catatan ? `<p style="font-style: italic; color: #7f8c8d;">Catatan: "${item.catatan}"</p>` : ''}
+                    <p style="font-weight: bold; margin-top: 5px;">Total: Rp ${totalItem.toLocaleString('id-ID')}</p>
+                </div>
+                <button type="button" class="btn-hapus" onclick="hapusItemKeranjang(event, '${item.id_produk}', this)">Hapus</button>
+            `;
+            cartList.appendChild(itemDiv);
+        });
+
+        // Tampilkan kalkulasi total belanjaan di bagian bawah
+        if (totalSection) {
+            totalSection.style.display = 'block';
+            const grandTotalElem = document.getElementById('grand-total');
+            if (grandTotalElem) {
+                grandTotalElem.innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+            }
+        }
 
     } catch (error) {
-        console.error("Gagal sinkronisasi keranjang dari server:", error);
-        // Jika belum ada data sama sekali dan gagal total, tampilkan pesan kosong/error
-        if (currentCartItems.length === 0 && cartList) {
-            cartList.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data keranjang dari server.</p>`;
-            if (totalSection) totalSection.style.display = 'none';
-            if (btnCheckout) btnCheckout.disabled = true;
-        }
-    }
-}
-
-// --- FUNGSI RENDER TAMPILAN KERANJANG ---
-function renderCartList(items) {
-    const cartList = document.getElementById('cart-list');
-    const totalSection = document.getElementById('total-section');
-    const btnCheckout = document.getElementById('btn-checkout');
-    
-    if (!cartList) return;
-
-    if (!Array.isArray(items) || items.length === 0) {
-        cartList.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Keranjang Anda kosong.</p>`;
-        if (totalSection) totalSection.style.display = 'none';
+        console.error("Gagal memuat keranjang:", error);
+        cartList.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data keranjang.</p>`;
         if (btnCheckout) btnCheckout.disabled = true;
-        return;
-    }
-
-    if (btnCheckout) btnCheckout.disabled = false;
-    cartList.innerHTML = ''; 
-    let grandTotal = 0;
-
-    items.forEach((item) => {
-        const hargaRaw = item.harga_satuan ? item.harga_satuan.toString().replace(/[^0-9.-]/g, '') : '0';
-        const totalRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : '0';
-
-        const harga = parseFloat(hargaRaw) || 0;
-        const jumlah = parseInt(item.jumlah) || 0;
-        const totalItem = parseFloat(totalRaw) || (harga * jumlah);
-        
-        grandTotal += totalItem;
-
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'cart-item';
-        itemDiv.innerHTML = `
-            <div class="cart-info">
-                <h4>${item.nama_produk || 'Produk'} (${item.id_produk})</h4>
-                <p>Harga Satuan: Rp ${harga.toLocaleString('id-ID')}</p>
-                <p>Jumlah: <strong>${jumlah}</strong> pcs</p>
-                ${item.catatan ? `<p style="font-style: italic; color: #7f8c8d;">Catatan: "${item.catatan}"</p>` : ''}
-                <p style="font-weight: bold; margin-top: 5px;">Total: Rp ${totalItem.toLocaleString('id-ID')}</p>
-            </div>
-            <button type="button" class="btn-hapus" onclick="hapusItemKeranjang(event, '${item.id_produk}', this)">Hapus</button>
-        `;
-        cartList.appendChild(itemDiv);
-    });
-
-    if (totalSection) {
-        totalSection.style.display = 'block';
-        const grandTotalElem = document.getElementById('grand-total');
-        if (grandTotalElem) {
-            grandTotalElem.innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
-        }
     }
 }
 
@@ -160,16 +116,8 @@ async function hapusItemKeranjang(event, idProduk, buttonElement) {
         }
     };
 
-    // Optimis UI: Hapus langsung item dari array lokal & render ulang agar terasa instan bagi pengguna
-    currentCartItems = currentCartItems.filter(item => String(item.id_produk).trim() !== String(idProduk).trim());
-    renderCartList(currentCartItems);
-    
-    // Perbarui juga cache di localStorage secara instan
-    const cacheKey = `cart_cache_${namaLogIn.trim()}`;
-    localStorage.setItem(cacheKey, JSON.stringify(currentCartItems));
-
     try {
-        // Kirim perintah hapus ke server di background menggunakan no-cors
+        // Gunakan mode 'no-cors' agar browser tidak mencegat redirect Google Apps Script
         await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
@@ -177,16 +125,16 @@ async function hapusItemKeranjang(event, idProduk, buttonElement) {
             body: JSON.stringify(payload)
         });
 
-        // Sinkronkan ulang data dari server setelah beberapa saat untuk memastikan keakuratannya
+        // Jeda 300ms agar Google Sheet selesai menghapus baris di server
         setTimeout(() => {
-            fetchAndUpdateCartFromServer(true);
-        }, 1000);
+            loadCartData();
+        }, 300);
 
     } catch (error) {
-        console.error("Gagal menghapus item di server:", error);
-        alert("Gagal terhubung ke jaringan saat menghapus item.");
-        // Ambil ulang data asli jika gagal
-        fetchAndUpdateCartFromServer(true);
+        console.error("Gagal menghapus item:", error);
+        alert("Gagal terhubung ke jaringan.");
+        buttonElement.disabled = false;
+        buttonElement.innerText = "Hapus";
     }
 }
 
@@ -197,7 +145,10 @@ function prosesSemuaTransaksi() {
         return;
     }
 
+    // Simpan seluruh data keranjang ke localStorage untuk dibaca oleh transaksi.html
     localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
+
+    // Arahkan ke halaman transaksi
     window.location.href = 'transaksi.html';
 }
 
@@ -213,7 +164,7 @@ function logout() {
     }
 }
 
-// --- EKSKUSI GLOBAL WINDOW ---
+// --- EKSKUSI GLOBAL WINDOW (Mencegah ReferenceError pada onclick HTML) ---
 window.prosesSemuaTransaksi = prosesSemuaTransaksi;
 window.hapusItemKeranjang = hapusItemKeranjang;
 window.bukaKeranjang = bukaKeranjang;
