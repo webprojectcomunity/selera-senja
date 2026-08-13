@@ -1,6 +1,8 @@
 // --- KONFIGURASI ---
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec";
 let cachedData = []; // Untuk optimasi kecepatan
+let currentPage = 1;  // Halaman aktif saat ini
+const itemsPerPage = 10; // Batas maksimal 10 produk per halaman
 
 /**
  * HELPER: Konversi URL Google Drive ke Link Gambar Thumbnail
@@ -16,36 +18,24 @@ function convertDriveUrl(url) {
 /************************************************
  * FUNGSI BADGE & SINKRONISASI KERANJANG
  ************************************************/
-
-/**
- * Memperbarui angka notifikasi merah pada badge keranjang
- */
-/**
- * Memperbarui angka notifikasi merah pada badge keranjang
- */
 function updateCartBadge() {
   const badge = document.getElementById('cart-badge');
   if (!badge) return;
 
-  // 1. Cari data keranjang dari berbagai kemungkinan key localStorage (termasuk berbasis user cache)
-  let rawCart = null;
-  
-  // Periksa kunci standar
-  rawCart = localStorage.getItem('cart') || 
+  let rawCart = localStorage.getItem('cart') || 
             localStorage.getItem('keranjang') || 
             localStorage.getItem('cartItems');
 
-  // Jika belum ketemu, cari key yang berawalan 'cart_cache_' atau mengandung kata 'cart'
   if (!rawCart) {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.startsWith('cart_cache_') || key.includes('cart'))) {
         rawCart = localStorage.getItem(key);
-        if (rawCart) break; // Ambil yang pertama kali ditemukan
+        if (rawCart) break;
       }
     }
   }
-            
+          
   let cartData = [];
   try {
     cartData = rawCart ? JSON.parse(rawCart) : [];
@@ -54,7 +44,6 @@ function updateCartBadge() {
     cartData = [];
   }
 
-  // Hitung total item
   const totalItems = Array.isArray(cartData) 
     ? cartData.reduce((sum, item) => {
         const qty = item.jumlah ?? item.qty ?? item.quantity ?? 1;
@@ -64,14 +53,12 @@ function updateCartBadge() {
 
   if (totalItems > 0) {
     badge.innerText = totalItems > 99 ? '99+' : totalItems;
-    badge.style.display = 'flex'; // Menampilkan balon merah
+    badge.style.display = 'flex';
   } else {
-    badge.style.display = 'none'; // Menyembunyikan jika kosong
+    badge.style.display = 'none';
   }
 }
-/**
- * Sinkronisasi data keranjang dari Spreadsheet Google Apps Script
- */
+
 async function syncCartFromDatabase(username) {
   if (!username || username === 'guest') {
     updateCartBadge();
@@ -83,13 +70,11 @@ async function syncCartFromDatabase(username) {
     const result = await response.json();
 
     if (result.success && Array.isArray(result.data)) {
-      // Simpan hasil dari server ke localStorage
       localStorage.setItem('cart', JSON.stringify(result.data));
     }
   } catch (error) {
     console.error('Gagal mengambil data keranjang dari server:', error);
   } finally {
-    // Perbarui indikator badge setelah proses fetch selesai
     updateCartBadge();
   }
 }
@@ -117,9 +102,10 @@ function closeImageModal() {
 }
 
 /************************************************
- * FUNGSI UTAMA: Load Menu dengan LocalStorage Cache
+ * FUNGSI UTAMA: Load Menu dengan LocalStorage Cache & Pagination
  ************************************************/
-async function loadMenu(searchQuery = '') {
+async function loadMenu(searchQuery = '', page = 1) {
+    currentPage = page;
     const grid = document.getElementById('product-grid');
     if (!grid) return;
     
@@ -135,12 +121,10 @@ async function loadMenu(searchQuery = '') {
         }
     }
 
-    // Jika data sama sekali belum ada, tampilkan loading
     if (cachedData.length === 0) {
         grid.innerHTML = '<p style="grid-column: span 2; text-align:center;">Memuat menu...</p>';
     } else {
-        // Render cepat menggunakan data cache yang ada agar pengguna tidak menunggu
-        renderProductGrid(cachedData, searchQuery, grid);
+        renderProductGrid(cachedData, searchQuery, grid, currentPage);
     }
 
     // 2. Ambil data terbaru dari server di latar belakang (Background Fetch)
@@ -149,14 +133,11 @@ async function loadMenu(searchQuery = '') {
         const result = await response.json();
         if (result.success && Array.isArray(result.data)) {
             cachedData = result.data;
-            // Simpan ke localStorage agar sesi berikutnya langsung terbuka cepat
             localStorage.setItem('product_cache', JSON.stringify(cachedData));
-            // Render ulang dengan data paling baru dari server
-            renderProductGrid(cachedData, searchQuery, grid);
+            renderProductGrid(cachedData, searchQuery, grid, currentPage);
         }
     } catch (error) {
         console.error('Gagal memperbarui data latar belakang:', error);
-        // Jika gagal total dan belum ada cache sama sekali, tampilkan pesan error
         if (cachedData.length === 0) {
             grid.innerHTML = '<p style="grid-column: span 2; text-align:center; color:red;">Gagal memuat data.</p>';
         }
@@ -164,10 +145,11 @@ async function loadMenu(searchQuery = '') {
 }
 
 /**
- * HELPER: Memisahkan logika rendering grid produk agar bisa dipanggil berkali-kali
+ * HELPER: Render Grid Produk + Kontrol Pagination (Max 10 per halaman)
  */
-function renderProductGrid(sourceData, searchQuery, gridElement) {
+function renderProductGrid(sourceData, searchQuery, gridElement, page = 1) {
     let data = sourceData;
+    
     if (searchQuery.trim() !== '') {
         const query = searchQuery.toLowerCase().trim();
         data = data.filter(item => 
@@ -177,12 +159,26 @@ function renderProductGrid(sourceData, searchQuery, gridElement) {
     }
 
     gridElement.innerHTML = '';
+    
     if (data.length === 0) {
         gridElement.innerHTML = '<p style="grid-column: span 2; text-align:center;">Makanan tidak ditemukan</p>';
+        removePaginationContainer();
         return;
     }
 
-    data.forEach(item => {
+    // Hitung Total Halaman
+    const totalPages = Math.ceil(data.length / itemsPerPage);
+    
+    if (page > totalPages) page = totalPages;
+    if (page < 1) page = 1;
+    currentPage = page;
+
+    // Potong data agar hanya menampilkan maksimal 10 item per halaman
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedData = data.slice(startIndex, endIndex);
+
+    paginatedData.forEach(item => {
         const values = Object.values(item);
         
         const idProduk  = values[0] || ''; 
@@ -207,6 +203,55 @@ function renderProductGrid(sourceData, searchQuery, gridElement) {
         </div>`;
         gridElement.insertAdjacentHTML('beforeend', card);
     });
+
+    // Render tombol navigasi halaman di bawah grid produk
+    renderPaginationControls(totalPages, page, searchQuery);
+}
+
+/**
+ * HELPER: Menampilkan Tombol Navigasi Halaman (Prev / Next)
+ */
+function renderPaginationControls(totalPages, page, searchQuery) {
+    let container = document.getElementById('pagination-container');
+    
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'pagination-container';
+        container.style.cssText = 'grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0;';
+        
+        const grid = document.getElementById('product-grid');
+        grid.after(container);
+    }
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    container.innerHTML = `
+        <button id="btn-prev" ${page === 1 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : 'style="cursor: pointer;"'} class="pagination-btn">◀ Sebelumnya</button>
+        <span style="font-weight: bold; font-size: 14px;">Hal ${page} dari ${totalPages}</span>
+        <button id="btn-next" ${page === totalPages ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : 'style="cursor: pointer;"'} class="pagination-btn">Berikutnya ▶</button>
+    `;
+
+    document.getElementById('btn-prev').onclick = () => {
+        if (currentPage > 1) {
+            loadMenu(searchQuery, currentPage - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    document.getElementById('btn-next').onclick = () => {
+        if (currentPage < totalPages) {
+            loadMenu(searchQuery, currentPage + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+}
+
+function removePaginationContainer() {
+    const container = document.getElementById('pagination-container');
+    if (container) container.remove();
 }
 
 /**
@@ -226,7 +271,8 @@ function initEventDelegation() {
 }
 
 async function jalankanPencarian() {
-    await loadMenu(document.getElementById('search-food').value);
+    const searchQuery = document.getElementById('search-food').value;
+    await loadMenu(searchQuery, 1); // Reset otomatis ke halaman 1 saat melakukan pencarian
 }
 
 function logout() {
@@ -241,12 +287,10 @@ function logout() {
  * INISIALISASI HALAMAN & EVENT LISTENERS
  ************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Tampilkan badge dari localStorage secara instan saat halaman dibuka
     updateCartBadge();
 
     const greetingElement = document.getElementById('user-greeting');
     
-    // 2. CEK JALUR LOGIN QR CODE TERLEBIH DAHULU
     const urlParams = new URLSearchParams(window.location.search);
     const qrUserId = urlParams.get('userId');
 
@@ -269,10 +313,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (greetingElement) greetingElement.innerText = `Hallo ${data.user.nama} !`;
                 
-                // Bersihkan query string parameter di URL
                 window.history.replaceState({}, document.title, window.location.pathname);
                 
-                // Sinkronkan data keranjang user dari spreadsheet
                 syncCartFromDatabase(data.user.nama);
                 
                 loadMenu();
@@ -291,7 +333,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 3. CEK JALUR LOGIN MANUAL
     const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser');
     if (!namaLogIn) {
         window.location.replace('index.html');
@@ -300,27 +341,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (greetingElement) greetingElement.innerText = `Hallo ${namaLogIn} !`;
     
-    // Sinkronkan data keranjang user dari spreadsheet
     syncCartFromDatabase(namaLogIn);
 
     loadMenu();
     initEventDelegation();
 });
 
-// Listener perubahan storage dari tab/halaman lain secara real-time
 window.addEventListener('storage', (event) => {
   if (['cart', 'keranjang', 'cartItems'].includes(event.key)) {
     updateCartBadge();
   }
 });
 
-// Custom Listener agar fungsi bisa dipanggil secara langsung/global
 window.addEventListener('cartUpdated', updateCartBadge);
 window.updateCartBadge = updateCartBadge;
 window.syncCartFromDatabase = syncCartFromDatabase;
 window.openImageModal = openImageModal;
 window.closeImageModal = closeImageModal;
 
-// Proteksi tombol back browser
 history.pushState(null, null, location.href);
 window.onpopstate = () => history.go(1);
