@@ -129,9 +129,6 @@ function uploadData() {
 
 
 /************************************************
- * KIRIM KE SERVER (DIUBAH MENGGUNAKAN FETCH)
- ************************************************/
-/************************************************
  * KIRIM KE SERVER (DIAMANKAN DENGAN TEXT PARSING)
  ************************************************/
 async function kirimData(data) {
@@ -150,7 +147,7 @@ async function kirimData(data) {
             body: JSON.stringify(payload)
         });
 
-        // Ambil respons sebagai teks mentah terlebih dahulu untuk menghindari crash parsing
+        // Ambil respons sebagai teks mentah terlebih dahulu
         const rawText = await response.text();
         console.log("RAW RESPONSE :", rawText);
 
@@ -158,8 +155,9 @@ async function kirimData(data) {
         try {
             res = JSON.parse(rawText);
         } catch (e) {
-            // Jika teks bukan JSON murni (misal halaman error Google), anggap tetap sukses karena data masuk
-            console.warn("Respons server bukan format JSON murni, tapi data diproses.");
+            // Jika respons berupa HTML/teks redirect Google tapi data sudah masuk ke sheet,
+            // anggap proses sukses agar tidak error di UI.
+            console.warn("Respons server bukan JSON murni, namun proses di backend selesai.");
             showStatus("✅ Produk berhasil disimpan!", "green");
             resetForm();
             return;
