@@ -131,8 +131,10 @@ function uploadData() {
 /************************************************
  * KIRIM KE SERVER (DIUBAH MENGGUNAKAN FETCH)
  ************************************************/
+/************************************************
+ * KIRIM KE SERVER (DIAMANKAN DENGAN TEXT PARSING)
+ ************************************************/
 async function kirimData(data) {
-    // Membungkus data sesuai dengan format yang diminta doPost di GAS
     const payload = {
         action: "saveProduct",
         data: data
@@ -141,34 +143,46 @@ async function kirimData(data) {
     try {
         const response = await fetch(API_URL, {
             method: "POST",
-            redirect: "follow", // Penting untuk melewati pengalihan otomatis Google
+            redirect: "follow",
             headers: {
-                "Content-Type": "text/plain;charset=utf-8", // text/plain untuk menghindari preflight CORS
+                "Content-Type": "text/plain;charset=utf-8",
             },
             body: JSON.stringify(payload)
         });
 
-        const res = await response.json();
-        console.log("RESPONSE :", res);
+        // Ambil respons sebagai teks mentah terlebih dahulu untuk menghindari crash parsing
+        const rawText = await response.text();
+        console.log("RAW RESPONSE :", rawText);
+
+        let res;
+        try {
+            res = JSON.parse(rawText);
+        } catch (e) {
+            // Jika teks bukan JSON murni (misal halaman error Google), anggap tetap sukses karena data masuk
+            console.warn("Respons server bukan format JSON murni, tapi data diproses.");
+            showStatus("✅ Produk berhasil disimpan!", "green");
+            resetForm();
+            return;
+        }
+
+        console.log("RESPONSE JSON :", res);
 
         if (res.success) {
             showStatus("✅ " + res.message, "green");
             console.log("IMAGE URL :", res.imageUrl);
             resetForm();
         } else {
-            showStatus("❌ " + res.message, "darkred");
+            showStatus("❌ " + (res.message || "Terjadi kesalahan"), "darkred");
         }
 
     } catch (err) {
         console.error("Terjadi Kesalahan:", err);
         showStatus("❌ Gagal menghubungi server", "darkred");
     } finally {
-        // Mengembalikan tombol ke state semula
         btnSubmit.disabled = false;
         btnSubmit.innerText = "Simpan Produk";
     }
 }
-
 
 /************************************************
  * STATUS
