@@ -10,6 +10,11 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtld
  ************************************************/
 const btnSubmit = document.getElementById("btnSubmit");
 const statusText = document.getElementById("status");
+const formTitle = document.getElementById("formTitle");
+
+// Element Mode & Update
+const selectProduk = document.getElementById("selectProduk");
+const idProdukInput = document.getElementById("idProduk");
 
 // Element Foto Produk
 const previewBox = document.getElementById("previewBox");
@@ -20,6 +25,91 @@ const gambarInput = document.getElementById("gambar");
 const qrCodeInput = document.getElementById("qrCode");
 const previewQrBox = document.getElementById("previewQrBox");
 const previewQrImg = document.getElementById("previewQrImg");
+
+
+/************************************************
+ * LOAD DAFTAR PRODUK SAAT HALAMAN DIMUAT
+ ************************************************/
+document.addEventListener("DOMContentLoaded", function() {
+    loadDaftarProduk();
+});
+
+async function loadDaftarProduk() {
+    try {
+        const response = await fetch(API_URL + "?action=getProducts");
+        const products = await response.json();
+        
+        if (selectProduk && Array.isArray(products)) {
+            // Bersihkan opsi kecuali yang pertama
+            selectProduk.innerHTML = '<option value="">-- Tambah Produk Baru --</option>';
+            
+            products.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.id_produk;
+                opt.textContent = `${p.id_produk} - ${p.nama}`;
+                selectProduk.appendChild(opt);
+            });
+        }
+    } catch (err) {
+        console.error("Gagal memuat daftar produk:", err);
+    }
+}
+
+
+/************************************************
+ * PILIH PRODUK UNTUK UPDATE / EDIT
+ ************************************************/
+if (selectProduk) {
+    selectProduk.addEventListener("change", async function() {
+        const selectedId = this.value;
+
+        if (!selectedId) {
+            // Reset form kembali ke mode tambah baru
+            resetForm();
+            if (formTitle) formTitle.innerText = "Tambah Produk";
+            btnSubmit.innerText = "Simpan Produk";
+            return;
+        }
+
+        showStatus("Memuat data produk...", "#000");
+
+        try {
+            const response = await fetch(API_URL + "?action=getProducts");
+            const products = await response.json();
+            const produk = products.find(p => p.id_produk === selectedId);
+
+            if (produk) {
+                idProdukInput.value = produk.id_produk;
+                document.getElementById("nama").value = produk.nama || "";
+                document.getElementById("deskripsi").value = produk.deskripsi || "";
+                document.getElementById("harga").value = produk.harga || "";
+
+                // Tampilkan preview foto produk jika ada
+                if (produk.gambar) {
+                    previewImg.src = produk.gambar;
+                    previewBox.style.display = "block";
+                } else {
+                    previewBox.style.display = "none";
+                }
+
+                // Tampilkan preview QR Code jika ada
+                if (produk.qr_code) {
+                    previewQrImg.src = produk.qr_code;
+                    previewQrBox.style.display = "block";
+                } else {
+                    previewQrBox.style.display = "none";
+                }
+
+                if (formTitle) formTitle.innerText = "Update Produk (" + produk.id_produk + ")";
+                btnSubmit.innerText = "Update Produk";
+                showStatus("✅ Data produk dimuat. Silakan perbarui.", "green");
+            }
+        } catch (err) {
+            console.error("Gagal mengambil detail produk:", err);
+            showStatus("❌ Gagal memuat data produk", "darkred");
+        }
+    });
+}
 
 
 /************************************************
@@ -89,9 +179,10 @@ btnSubmit.addEventListener("click", uploadData);
 
 
 /************************************************
- * UPLOAD DATA
+ * UPLOAD / UPDATE DATA
  ************************************************/
 function uploadData() {
+    const idProduk = idProdukInput.value.trim();
     const nama = document.getElementById("nama").value.trim();
     const deskripsi = document.getElementById("deskripsi").value.trim();
     const harga = document.getElementById("harga").value.trim();
@@ -113,7 +204,7 @@ function uploadData() {
      * DISABLE BUTTON
      ********************************************/
     btnSubmit.disabled = true;
-    btnSubmit.innerText = "Menyimpan...";
+    btnSubmit.innerText = idProduk ? "Memperbarui..." : "Menyimpan...";
     showStatus("Memproses data...", "#000");
 
     const fileGambar = gambarInput.files[0];
@@ -146,6 +237,7 @@ function uploadData() {
         readFileAsBase64(fileQr)
     ]).then(([imgResult, qrResult]) => {
         const data = {
+            id_produk: idProduk,
             nama: nama,
             deskripsi: deskripsi,
             harga: harga,
@@ -160,12 +252,12 @@ function uploadData() {
         };
 
         console.log("DATA KIRIM :", data);
-        kirimData(data);
+        kirimData(data, idProduk ? "updateProduct" : "saveProduct");
     }).catch(err => {
         console.error("Gagal membaca file:", err);
         showStatus("❌ Gagal memproses file gambar", "darkred");
         btnSubmit.disabled = false;
-        btnSubmit.innerText = "Simpan Produk";
+        btnSubmit.innerText = idProduk ? "Update Produk" : "Simpan Produk";
     });
 }
 
@@ -174,9 +266,9 @@ function uploadData() {
  * KIRIM KE SERVER
  * GOOGLE APPS SCRIPT + GITHUB PAGES
  ************************************************/
-async function kirimData(data) {
+async function kirimData(data, actionType) {
     const payload = {
-        action: "saveProduct",
+        action: actionType,
         data: data
     };
 
@@ -195,11 +287,16 @@ async function kirimData(data) {
 
         console.log("Request berhasil dikirim ke Google Apps Script");
 
-        showStatus("✅ Produk sedang diproses dan berhasil dikirim!", "green");
+        const successMsg = actionType === "updateProduct" 
+            ? "✅ Produk berhasil diperbarui!" 
+            : "✅ Produk sedang diproses dan berhasil disimpan!";
+
+        showStatus(successMsg, "green");
 
         setTimeout(function () {
             resetForm();
-        }, 1000);
+            loadDaftarProduk(); // Refresh daftar produk di select
+        }, 1500);
 
     } catch (err) {
         console.error("Terjadi Kesalahan:", err);
@@ -209,7 +306,7 @@ async function kirimData(data) {
         );
     } finally {
         btnSubmit.disabled = false;
-        btnSubmit.innerText = "Simpan Produk";
+        btnSubmit.innerText = idProdukInput.value ? "Update Produk" : "Simpan Produk";
     }
 }
 
@@ -227,6 +324,10 @@ function showStatus(message, color) {
  * RESET FORM
  ************************************************/
 function resetForm() {
+    if (selectProduk) selectProduk.value = "";
+    if (idProdukInput) idProdukInput.value = "";
+    if (formTitle) formTitle.innerText = "Tambah Produk";
+
     document.getElementById("nama").value = "";
     document.getElementById("deskripsi").value = "";
     document.getElementById("harga").value = "";
