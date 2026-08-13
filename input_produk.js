@@ -10,13 +10,20 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtld
  ************************************************/
 const btnSubmit = document.getElementById("btnSubmit");
 const statusText = document.getElementById("status");
+
+// Element Foto Produk
 const previewBox = document.getElementById("previewBox");
 const previewImg = document.getElementById("previewImg");
 const gambarInput = document.getElementById("gambar");
 
+// Element QR Code
+const qrCodeInput = document.getElementById("qrCode");
+const previewQrBox = document.getElementById("previewQrBox");
+const previewQrImg = document.getElementById("previewQrImg");
+
 
 /************************************************
- * PREVIEW GAMBAR
+ * PREVIEW GAMBAR PRODUK
  ************************************************/
 gambarInput.addEventListener("change", function(e) {
     const file = e.target.files[0];
@@ -26,9 +33,6 @@ gambarInput.addEventListener("change", function(e) {
         return;
     }
 
-    /****************************************
-     * VALIDASI SIZE (Maks 2MB)
-     ****************************************/
     if (file.size > 2 * 1024 * 1024) {
         alert("Ukuran gambar maksimal 2MB");
         gambarInput.value = "";
@@ -45,6 +49,37 @@ gambarInput.addEventListener("change", function(e) {
 
     reader.readAsDataURL(file);
 });
+
+
+/************************************************
+ * PREVIEW QR CODE
+ ************************************************/
+if (qrCodeInput) {
+    qrCodeInput.addEventListener("change", function(e) {
+        const file = e.target.files[0];
+
+        if (!file) {
+            previewQrBox.style.display = "none";
+            return;
+        }
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert("Ukuran QR Code maksimal 2MB");
+            qrCodeInput.value = "";
+            previewQrBox.style.display = "none";
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function(evt) {
+            previewQrImg.src = evt.target.result;
+            previewQrBox.style.display = "block";
+        };
+
+        reader.readAsDataURL(file);
+    });
+}
 
 
 /************************************************
@@ -81,50 +116,57 @@ function uploadData() {
     btnSubmit.innerText = "Menyimpan...";
     showStatus("Memproses data...", "#000");
 
-    /********************************************
-     * FILE
-     ********************************************/
-    const file = gambarInput.files[0];
+    const fileGambar = gambarInput.files[0];
+    const fileQr = qrCodeInput ? qrCodeInput.files[0] : null;
 
-    /********************************************
-     * JIKA ADA FILE
-     ********************************************/
-    if (file) {
-        const reader = new FileReader();
-
-        reader.onload = function(evt) {
-            const base64Data = evt.target.result.split(',')[1];
-
-            const data = {
-                nama: nama,
-                deskripsi: deskripsi,
-                harga: harga,
-                imageB64: base64Data,
-                mimeType: file.type,
-                filename: Date.now() + "_" + file.name
+    // Helper untuk membaca file ke base64
+    const readFileAsBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            if (!file) {
+                resolve({ base64: "", mimeType: "", filename: "" });
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const base64Data = evt.target.result.split(',')[1];
+                resolve({
+                    base64: base64Data,
+                    mimeType: file.type,
+                    filename: Date.now() + "_" + file.name
+                });
             };
+            reader.onerror = error => reject(error);
+            reader.readAsDataURL(file);
+        });
+    };
 
-            console.log("DATA KIRIM :", data);
-            kirimData(data);
-        };
-
-        reader.readAsDataURL(file);
-
-    } else {
-        /****************************************
-         * TANPA GAMBAR
-         ****************************************/
+    // Proses pembacaan file gambar produk dan QR code secara bersamaan
+    Promise.all([
+        readFileAsBase64(fileGambar),
+        readFileAsBase64(fileQr)
+    ]).then(([imgResult, qrResult]) => {
         const data = {
             nama: nama,
             deskripsi: deskripsi,
             harga: harga,
-            imageB64: "",
-            mimeType: "",
-            filename: ""
+            // Data Foto Produk
+            imageB64: imgResult.base64,
+            mimeType: imgResult.mimeType,
+            filename: imgResult.filename,
+            // Data QR Code
+            qrB64: qrResult.base64,
+            qrMimeType: qrResult.mimeType,
+            qrFilename: qrResult.filename
         };
 
+        console.log("DATA KIRIM :", data);
         kirimData(data);
-    }
+    }).catch(err => {
+        console.error("Gagal membaca file:", err);
+        showStatus("❌ Gagal memproses file gambar", "darkred");
+        btnSubmit.disabled = false;
+        btnSubmit.innerText = "Simpan Produk";
+    });
 }
 
 
@@ -133,14 +175,12 @@ function uploadData() {
  * GOOGLE APPS SCRIPT + GITHUB PAGES
  ************************************************/
 async function kirimData(data) {
-
     const payload = {
         action: "saveProduct",
         data: data
     };
 
     try {
-
         console.log("PAYLOAD DIKIRIM:", payload);
 
         const response = await fetch(API_URL, {
@@ -153,42 +193,26 @@ async function kirimData(data) {
             body: JSON.stringify(payload)
         });
 
-        /*
-         * PENTING:
-         * Dengan mode: "no-cors", response bersifat opaque.
-         * Kita tidak dapat menggunakan:
-         *
-         * response.json()
-         * response.text()
-         *
-         * Karena browser tidak mengizinkan membaca respons.
-         */
-
         console.log("Request berhasil dikirim ke Google Apps Script");
 
         showStatus("✅ Produk sedang diproses dan berhasil dikirim!", "green");
 
-        // Beri sedikit waktu backend menyimpan data
         setTimeout(function () {
             resetForm();
         }, 1000);
 
     } catch (err) {
-
         console.error("Terjadi Kesalahan:", err);
-
         showStatus(
             "❌ Gagal mengirim data ke server. Periksa koneksi atau URL API.",
             "darkred"
         );
-
     } finally {
-
         btnSubmit.disabled = false;
         btnSubmit.innerText = "Simpan Produk";
-
     }
 }
+
 
 /************************************************
  * STATUS
@@ -206,6 +230,14 @@ function resetForm() {
     document.getElementById("nama").value = "";
     document.getElementById("deskripsi").value = "";
     document.getElementById("harga").value = "";
+    
+    // Reset Foto Produk
     gambarInput.value = "";
     previewBox.style.display = "none";
+    
+    // Reset QR Code
+    if (qrCodeInput) {
+        qrCodeInput.value = "";
+        previewQrBox.style.display = "none";
+    }
 }
