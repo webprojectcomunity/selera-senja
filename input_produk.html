@@ -3,13 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Input Produk</title>
+    <title>Input & Update Produk</title>
     <link rel="stylesheet" href="input_produk.css">
 </head>
 <body>
 
 <div class="glass-form">
-    <h2>Tambah Produk</h2>
+    <h2 id="formTitle">Tambah Produk</h2>
+
+    <!-- PILIHAN MODE UPDATE / EDIT PRODUK -->
+    <div class="input-group">
+        <label>Mode / Pilih Produk (Opsional untuk Update)</label>
+        <select id="selectProduk">
+            <option value="">-- Tambah Produk Baru --</option>
+            <!-- Daftar produk akan dimuat otomatis oleh JavaScript -->
+        </select>
+    </div>
+
+    <!-- ID PRODUK TERSEMBUNYI UNTUK UPDATE -->
+    <input type="hidden" id="idProduk">
 
     <div class="input-group">
         <label>Nama Produk</label>
@@ -29,14 +41,14 @@
     <div class="input-group">
         <label>Foto Produk</label>
         <input type="file" id="gambar" accept="image/*">
-        <div class="preview" id="previewBox">
+        <div class="preview" id="previewBox" style="display: none;">
             <img id="previewImg">
         </div>
     </div>
 
-    <!-- TAMBAHAN FORM INPUT QR CODE -->
+    <!-- FORM INPUT QR CODE -->
     <div class="input-group">
-        <label>QR Code (Format JPG)</label>
+        <label>QR Code / QRIS (Format JPG)</label>
         <input type="file" id="qrCode" accept=".jpg, .jpeg, image/jpeg">
         <div class="preview" id="previewQrBox" style="display: none;">
             <img id="previewQrImg">
