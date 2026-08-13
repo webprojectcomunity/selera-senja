@@ -129,56 +129,64 @@ function uploadData() {
 
 
 /************************************************
- * KIRIM KE SERVER (DIAMANKAN DENGAN TEXT PARSING)
+ * KIRIM KE SERVER
+ * GOOGLE APPS SCRIPT + GITHUB PAGES
  ************************************************/
 async function kirimData(data) {
+
     const payload = {
         action: "saveProduct",
         data: data
     };
 
     try {
+
+        console.log("PAYLOAD DIKIRIM:", payload);
+
         const response = await fetch(API_URL, {
             method: "POST",
+            mode: "no-cors",
             redirect: "follow",
             headers: {
-                "Content-Type": "text/plain;charset=utf-8",
+                "Content-Type": "text/plain;charset=utf-8"
             },
             body: JSON.stringify(payload)
         });
 
-        // Ambil respons sebagai teks mentah terlebih dahulu
-        const rawText = await response.text();
-        console.log("RAW RESPONSE :", rawText);
+        /*
+         * PENTING:
+         * Dengan mode: "no-cors", response bersifat opaque.
+         * Kita tidak dapat menggunakan:
+         *
+         * response.json()
+         * response.text()
+         *
+         * Karena browser tidak mengizinkan membaca respons.
+         */
 
-        let res;
-        try {
-            res = JSON.parse(rawText);
-        } catch (e) {
-            // Jika respons berupa HTML/teks redirect Google tapi data sudah masuk ke sheet,
-            // anggap proses sukses agar tidak error di UI.
-            console.warn("Respons server bukan JSON murni, namun proses di backend selesai.");
-            showStatus("✅ Produk berhasil disimpan!", "green");
+        console.log("Request berhasil dikirim ke Google Apps Script");
+
+        showStatus("✅ Produk sedang diproses dan berhasil dikirim!", "green");
+
+        // Beri sedikit waktu backend menyimpan data
+        setTimeout(function () {
             resetForm();
-            return;
-        }
-
-        console.log("RESPONSE JSON :", res);
-
-        if (res.success) {
-            showStatus("✅ " + res.message, "green");
-            console.log("IMAGE URL :", res.imageUrl);
-            resetForm();
-        } else {
-            showStatus("❌ " + (res.message || "Terjadi kesalahan"), "darkred");
-        }
+        }, 1000);
 
     } catch (err) {
+
         console.error("Terjadi Kesalahan:", err);
-        showStatus("❌ Gagal menghubungi server", "darkred");
+
+        showStatus(
+            "❌ Gagal mengirim data ke server. Periksa koneksi atau URL API.",
+            "darkred"
+        );
+
     } finally {
+
         btnSubmit.disabled = false;
         btnSubmit.innerText = "Simpan Produk";
+
     }
 }
 
