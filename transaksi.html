@@ -91,11 +91,25 @@
             }
         });
 
-        function selesaiPembayaran() {
-            if (confirm("Pastikan Anda sudah menyelesaikan pembayaran via aplikasi e-Wallet/Bank. Lanjutkan?")) {
+       function selesaiPembayaran() {
+            if (confirm("Pastikan Anda sudah melakukan pembayaran via QRIS. Lanjutkan ke halaman status pesanan?")) {
+                const rawData = localStorage.getItem('active_qris_trx');
+                if (rawData) {
+                    const trxData = JSON.parse(rawData);
+                    
+                    // Update status di LocalStorage daftar pesanan menjadi "Menunggu Verifikasi" / "Sedang Dikemas"
+                    let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
+                    daftarPesanan = daftarPesanan.map(order => {
+                        if (order.id_transaksi === trxData.id_transaksi) {
+                            order.status = 'Menunggu Konfirmasi Pembayaran'; // atau Sedang Dikemas setelah diverifikasi admin
+                        }
+                        return order;
+                    });
+                    localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
+                }
+
                 localStorage.removeItem('active_qris_trx');
-                alert("Pembayaran Anda sedang diverifikasi. Terima kasih!");
-                window.location.replace('landing_page.html');
+                window.location.replace('order_status.html');
             }
         }
     </script>
