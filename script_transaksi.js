@@ -1,104 +1,4 @@
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec";
-
-let currentCartData = [];
-let totalBayar = 0;
-
-// Format Rupiah
-function formatRupiah(number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
-}
-
-// Handling pergantian UI Metode Pembayaran (Diselaraskan dengan HTML)
-function pilihPembayaran(value) {
-    const qrisBox = document.getElementById('qris-box');
-    const labelTunai = document.getElementById('label-tunai');
-    const labelQris = document.getElementById('label-qris');
-
-    if (labelTunai && labelQris) {
-        labelQris.classList.toggle('active', value === 'QRIS');
-        labelTunai.classList.toggle('active', value === 'Tunai');
-    }
-
-    if (qrisBox) {
-        qrisBox.style.display = (value === 'QRIS') ? 'block' : 'none';
-    }
-}
-
-// Inisialisasi Halaman
-document.addEventListener('DOMContentLoaded', () => {
-    const activeUser = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || localStorage.getItem('username');
-    
-    // Set Nama User (Menggunakan ID 'user-display' sesuai HTML)
-    const userDisplayElem = document.getElementById('user-display');
-    if (userDisplayElem) {
-        userDisplayElem.innerText = activeUser || 'Pelanggan';
-    }
-
-    if (!activeUser) {
-        alert("Sesi berakhir, silakan login kembali.");
-        window.location.replace('index.html');
-        return;
-    }
-
-    // Ambil data keranjang dari berbagai kemungkinan key localStorage
-    const rawCart = localStorage.getItem('cart') || 
-                    localStorage.getItem('keranjang') || 
-                    localStorage.getItem('cartItems') || 
-                    localStorage.getItem('spg_cart');
-    
-    try {
-        currentCartData = rawCart ? JSON.parse(rawCart) : [];
-    } catch (e) {
-        console.error("Gagal parse data keranjang:", e);
-        currentCartData = [];
-    }
-
-    // Cek apakah keranjang kosong
-    if (!Array.isArray(currentCartData) || currentCartData.length === 0) {
-        alert("Keranjang Anda kosong!");
-        window.location.href = 'chart.html';
-        return;
-    }
-
-    renderOrderSummary();
-});
-
-// Render Item Pesanan ke UI
-function renderOrderSummary() {
-    const container = document.getElementById('order-items-list');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    totalBayar = 0;
-
-    currentCartData.forEach(item => {
-        const nama = item.nama_produk || item.nama || item.title || 'Produk';
-        const jumlah = parseInt(item.jumlah || item.qty || item.quantity || 1, 10);
-        const harga = parseFloat(item.harga_satuan || item.harga || item.price || 0);
-        const totalHargaItem = harga * jumlah;
-
-        totalBayar += totalHargaItem;
-
-        const rowHTML = `
-            <div class="order-item">
-                <div class="item-detail">
-                    <h4>${nama}</h4>
-                    <p>${jumlah}x @ ${formatRupiah(harga)}</p>
-                </div>
-                <div class="item-price">${formatRupiah(totalHargaItem)}</div>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', rowHTML);
-    });
-
-    // Update elemen Total Pembayaran di HTML
-    const grandTotalElem = document.getElementById('grand-total');
-    if (grandTotalElem) {
-        grandTotalElem.innerText = formatRupiah(totalBayar);
-    }
-}
-
-// Eksekusi Kirim Transaksi ke Google Apps Script (Diselaraskan dengan HTML)
+// Eksekusi Kirim Transaksi ke Google Apps Script
 async function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const namaUser = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || 'Pelanggan';
@@ -138,9 +38,7 @@ async function prosesPembayaranAkhir() {
         const result = await response.json();
 
         if (result.success) {
-            alert("Pesanan berhasil dibuat! Silakan lakukan pembayaran.");
-            
-            // Bersihkan seluruh kunci keranjang lokal
+            // Bersihkan keranjang lokal setelah pesanan berhasil dibuat
             localStorage.removeItem('cart');
             localStorage.removeItem('keranjang');
             localStorage.removeItem('cartItems');
@@ -148,7 +46,25 @@ async function prosesPembayaranAkhir() {
 
             if (window.updateCartBadge) window.updateCartBadge();
 
-            window.location.replace('landing_page.html');
+            // --- CABANG ALUR PEMBAYARAN ---
+            if (metodePembayaran === 'QRIS') {
+                // Simpan data sementara untuk halaman QRIS
+                const qrisData = {
+                    id_transaksi: result.id_transaksi || ('TRX-' + Date.now()),
+                    total_bayar: totalBayar,
+                    nama_user: namaUser,
+                    qr_code_url: result.qr_code_url || 'qris_placeholder.png' // Bisa disesuaikan dari backend jika ada
+                };
+                localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
+
+                // Arahkan ke halaman barcode QRIS
+                window.location.replace('qris_payment.html');
+            } else {
+                // Alur Tunai
+                alert("Pesanan berhasil dibuat! Silakan lakukan pembayaran tunai di kasir.");
+                window.location.replace('landing_page.html');
+            }
+
         } else {
             alert("Gagal memproses pesanan: " + (result.message || "Terjadi kesalahan server."));
             if (btnSubmit) {
