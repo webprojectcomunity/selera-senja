@@ -64,9 +64,24 @@
         <a href="landing_page.html" class="btn-home">← Kembali ke Beranda</a>
     </div>
 
-    <script>
+   <script>
         function formatRupiah(number) {
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+        }
+
+        // Fungsi untuk melanjutkan pembayaran QRIS jika status masih Belum Bayar
+        function lanjutkanBayarQris(idTrx) {
+            const daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
+            const currentOrder = daftarPesanan.find(o => o.id_transaksi === idTrx);
+            if (currentOrder) {
+                localStorage.setItem('active_qris_trx', JSON.stringify({
+                    id_transaksi: currentOrder.id_transaksi,
+                    total_bayar: currentOrder.total_bayar,
+                    nama_user: localStorage.getItem('namaUser') || 'Pelanggan',
+                    qr_code_url: 'qris_placeholder.png'
+                }));
+                window.location.href = 'qris_payment.html';
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -86,8 +101,20 @@
 
             daftarPesanan.forEach(order => {
                 let badgeClass = 'badge-dikemas';
-                if (order.status === 'Belum Bayar') badgeClass = 'badge-belum-bayar';
-                else if (order.status.includes('Menunggu')) badgeClass = 'badge-verifikasi';
+                let aksiBayar = '';
+
+                if (order.status === 'Belum Bayar') {
+                    badgeClass = 'badge-belum-bayar';
+                    aksiBayar = `
+                        <div style="margin-top: 12px; text-align: right; border-top: 1px dashed #eee; padding-top: 8px;">
+                            <button onclick="lanjutkanBayarQris('${order.id_transaksi}')" style="background: #e74c3c; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: bold;">
+                                Bayar Sekarang (QRIS)
+                            </button>
+                        </div>
+                    `;
+                } else if (order.status.includes('Menunggu')) {
+                    badgeClass = 'badge-verifikasi';
+                }
 
                 let itemsHTML = '';
                 if (Array.isArray(order.items)) {
@@ -110,10 +137,11 @@
                         <div style="margin-bottom: 10px;">
                             ${itemsHTML}
                         </div>
-                        <div style="display: flex; justify-content: space-between; border-top: 1px dashed #eee; padding-top: 8px; font-weight: bold;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-weight: bold;">
                             <span>Total:</span>
                             <span style="color: #e74c3c;">${formatRupiah(order.total_bayar)}</span>
                         </div>
+                        ${aksiBayar}
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', cardHTML);
