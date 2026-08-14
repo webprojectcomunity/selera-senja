@@ -19,8 +19,7 @@ async function prosesPembayaranAkhir() {
         btnSubmit.innerText = "Memproses Pesanan...";
     }
 
-    // Tentukan status awal berdasarkan metode pembayaran
-    // Cash langsung "Sedang Dikemas", QRIS awalnya "Belum Bayar"
+    // Tentukan status awal: Tunai = "Sedang Dikemas", QRIS = "Belum Bayar"
     const statusAwal = (metodePembayaran === 'Tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
 
     const payload = {
@@ -58,7 +57,7 @@ async function prosesPembayaranAkhir() {
                 metode_pembayaran: metodePembayaran,
                 status: statusAwal
             };
-            daftarPesanan.unshift.apply(daftarPesanan, [pesananBaru]); // Masukkan ke urutan paling atas
+            daftarPesanan.unshift(pesananBaru);
             localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
 
             // Bersihkan keranjang lokal
@@ -69,20 +68,23 @@ async function prosesPembayaranAkhir() {
 
             if (window.updateCartBadge) window.updateCartBadge();
 
-            // Cabang Alur Pembayaran
+            // KEDUANYA MASUK KE order_status.html, namun jika QRIS kita simpan sesi untuk opsi tampilkan barcode jika diperlukan
             if (metodePembayaran === 'QRIS') {
                 const qrisData = {
                     id_transaksi: idTransaksi,
                     total_bayar: totalBayar,
                     nama_user: namaUser,
-                    qr_code_url: (result && result.qr_code_url) ? result.qr_code_url : 'qris_placeholder.png'
+                    qr_code_url: (result && result.qr_code_url) ? result.qr_code_url : '' 
                 };
                 localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
-                window.location.replace('qris_payment.html');
+                
+                alert("Pesanan dibuat dengan status: Belum Bayar. Silakan selesaikan pembayaran QRIS.");
             } else {
-                alert("Pesanan berhasil dibuat! Status pesanan Anda: Sedang Dikemas.");
-                window.location.replace('order_status.html');
+                alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
             }
+
+            // Langsung arahkan ke halaman order_status.html untuk kedua metode
+            window.location.replace('order_status.html');
 
         } else {
             alert("Gagal memproses pesanan: " + ((result && result.message) ? result.message : "Terjadi kesalahan server."));
