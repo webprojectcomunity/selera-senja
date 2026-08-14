@@ -19,12 +19,17 @@ async function prosesPembayaranAkhir() {
         btnSubmit.innerText = "Memproses Pesanan...";
     }
 
+    // Tentukan status awal berdasarkan metode pembayaran
+    // Cash langsung "Sedang Dikemas", QRIS awalnya "Belum Bayar"
+    const statusAwal = (metodePembayaran === 'Tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
+
     const payload = {
         action: "createTransaction",
         user: namaUser,
         id_user: idUser,
         total_bayar: totalBayar,
         metode_pembayaran: metodePembayaran,
+        status: statusAwal,
         catatan: catatan,
         items: currentCartData
     };
@@ -32,13 +37,31 @@ async function prosesPembayaranAkhir() {
     try {
         const response = await fetch(APPS_SCRIPT_URL, {
             method: "POST",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
             body: JSON.stringify(payload)
         });
 
         const result = await response.json();
 
-        if (result.success) {
-            // Bersihkan keranjang lokal setelah pesanan berhasil dibuat
+        if (result && (result.success || result.status === 'success')) {
+            const idTransaksi = (result && result.id_transaksi) ? result.id_transaksi : ('TRX-' + Date.now());
+
+            // Simpan riwayat pesanan ke localStorage untuk ditampilkan di order_status.html
+            let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
+            const pesananBaru = {
+                id_transaksi: idTransaksi,
+                tanggal: new Date().toLocaleString('id-ID'),
+                items: currentCartData,
+                total_bayar: totalBayar,
+                metode_pembayaran: metodePembayaran,
+                status: statusAwal
+            };
+            daftarPesanan.unshift.apply(daftarPesanan, [pesananBaru]); // Masukkan ke urutan paling atas
+            localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
+
+            // Bersihkan keranjang lokal
             localStorage.removeItem('cart');
             localStorage.removeItem('keranjang');
             localStorage.removeItem('cartItems');
@@ -46,27 +69,23 @@ async function prosesPembayaranAkhir() {
 
             if (window.updateCartBadge) window.updateCartBadge();
 
-            // --- CABANG ALUR PEMBAYARAN ---
+            // Cabang Alur Pembayaran
             if (metodePembayaran === 'QRIS') {
-                // Simpan data sementara untuk halaman QRIS
                 const qrisData = {
-                    id_transaksi: result.id_transaksi || ('TRX-' + Date.now()),
+                    id_transaksi: idTransaksi,
                     total_bayar: totalBayar,
                     nama_user: namaUser,
-                    qr_code_url: result.qr_code_url || 'qris_placeholder.png' // Bisa disesuaikan dari backend jika ada
+                    qr_code_url: (result && result.qr_code_url) ? result.qr_code_url : 'qris_placeholder.png'
                 };
                 localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
-
-                // Arahkan ke halaman barcode QRIS
                 window.location.replace('qris_payment.html');
             } else {
-                // Alur Tunai
-                alert("Pesanan berhasil dibuat! Silakan lakukan pembayaran tunai di kasir.");
-                window.location.replace('landing_page.html');
+                alert("Pesanan berhasil dibuat! Status pesanan Anda: Sedang Dikemas.");
+                window.location.replace('order_status.html');
             }
 
         } else {
-            alert("Gagal memproses pesanan: " + (result.message || "Terjadi kesalahan server."));
+            alert("Gagal memproses pesanan: " + ((result && result.message) ? result.message : "Terjadi kesalahan server."));
             if (btnSubmit) {
                 btnSubmit.disabled = false;
                 btnSubmit.innerText = "Konfirmasi & Bayar Sekarang";
