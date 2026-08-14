@@ -3,100 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Konfirmasi Transaksi</title>
-    <!-- Style Global dan Style Khusus Halaman Transaksi -->
+    <title>Pembayaran QRIS</title>
     <link rel="stylesheet" href="detail_pesanan.css">
     <link rel="stylesheet" href="transaksi.css">
+    <style>
+        .qris-container {
+            text-align: center;
+            padding: 20px;
+            background: #fff;
+            border-radius: 12px;
+            margin: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .qris-container img {
+            width: 250px;
+            height: 250px;
+            object-fit: contain;
+            margin: 15px 0;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .nominal-tagihan {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 10px 0;
+        }
+        .btn-selesai {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- Navigasi Atas -->
         <div class="header">
-            <a href="chart.html" class="btn-kembali-header">← Keranjang</a>
-            <h2>Konfirmasi Pembayaran</h2>
+            <h2>Scan QRIS Pembayaran</h2>
         </div>
 
-        <!-- Card Informasi Pengguna -->
-        <div class="section-card">
-            <h3>Informasi Pemesan</h3>
-            <div class="info-row">
-                <span>Nama Pelanggan:</span>
-                <strong id="user-display" style="color: #2c3e50;">-</strong>
-            </div>
-        </div>
-
-        <!-- Card Daftar Makanan / Pesanan -->
-        <div class="section-card">
-            <h3>Rincian Pesanan</h3>
-            <div id="order-items-list" class="items-list">
-                <p style="text-align: center; color: #7f8c8d; font-size: 13px;">Memuat rincian pesanan...</p>
-            </div>
+        <div class="qris-container">
+            <p>Silakan lakukan scan menggunakan aplikasi e-Wallet atau Mobile Banking Anda:</p>
             
-            <div class="divider"></div>
+            <div class="nominal-tagihan" id="display-nominal">Rp 0</div>
+            <p style="font-size: 13px; color: #7f8c8d;" id="display-trx">ID Transaksi: -</p>
 
-            <div class="total-row">
-                <span>Total Pembayaran:</span>
-                <span id="grand-total">Rp 0</span>
-            </div>
-        </div>
+            <!-- Gambar Barcode QRIS -->
+            <img id="img-qris-code" src="qris_placeholder.png" alt="QRIS Barcode">
 
-        <!-- Card Pilih Metode Pembayaran -->
-        <div class="section-card">
-            <h3>Metode Pembayaran</h3>
-            <div class="payment-options">
-                <label class="payment-card active" id="label-tunai">
-                    <input type="radio" name="payment_method" value="Tunai" checked onclick="pilihPembayaran('Tunai')">
-                    <div class="payment-info">
-                        <span>Tunai / Cash</span>
-                        <small>Bayar langsung di kasir / tempat</small>
-                    </div>
-                </label>
-
-                <label class="payment-card" id="label-qris">
-                    <input type="radio" name="payment_method" value="QRIS" onclick="pilihPembayaran('QRIS')">
-                    <div class="payment-info">
-                        <span>QRIS / Non-Tunai</span>
-                        <small>Scan QR via GoPay, OVO, Dana, BNI, dll.</small>
-                    </div>
-                </label>
+            <div class="qris-note" style="margin-top: 10px; font-size: 12px; color: #e67e22;">
+                *Pastikan nominal transfer sesuai dengan total tagihan di atas secara presisi.
             </div>
 
-            <!-- Detail QRIS -->
-            <div id="qris-box" class="qris-box" style="display: none;">
-                <p>Silakan scan kode QRIS di bawah ini:</p>
-                <img id="qris-image" src="qris_placeholder.png" alt="Kode QRIS Pembayaran">
-                <span class="qris-note">*Pastikan nominal transfer sesuai dengan total pembayaran.</span>
-            </div>
+            <button class="btn-selesai" onclick="selesaiPembayaran()">Saya Sudah Membayar</button>
         </div>
-
-        <!-- Card Catatan Tambahan -->
-        <div class="section-card">
-            <h3>Catatan Pesanan (Opsional)</h3>
-            <textarea id="catatan-transaksi" placeholder="Contoh: Tanpa sambal, bungkus terpisah, dll."></textarea>
-        </div>
-
-        <!-- Tombol Aksi Akhir -->
-        <button id="btn-proses-bayar" class="btn-checkout" onclick="prosesPembayaranAkhir()">Konfirmasi & Bayar Sekarang</button>
     </div>
 
-    <!-- Script Pemrosesan Transaksi -->
-    <script src="script_transaksi.js"></script>
-
     <script>
-        function pilihPembayaran(metode) {
-            const qrisBox = document.getElementById('qris-box');
-            const labelTunai = document.getElementById('label-tunai');
-            const labelQris = document.getElementById('label-qris');
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+        }
 
-            if (metode === 'QRIS') {
-                qrisBox.style.display = 'block';
-                labelQris.classList.add('active');
-                labelTunai.classList.remove('active');
-            } else {
-                qrisBox.style.display = 'none';
-                labelTunai.classList.add('active');
-                labelQris.classList.remove('active');
+        document.addEventListener('DOMContentLoaded', () => {
+            const rawData = localStorage.getItem('active_qris_trx');
+            if (!rawData) {
+                alert("Sesi pembayaran tidak ditemukan.");
+                window.location.replace('landing_page.html');
+                return;
+            }
+
+            const trxData = JSON.parse(rawData);
+            
+            document.getElementById('display-nominal').innerText = formatRupiah(trxData.total_bayar);
+            document.getElementById('display-trx').innerText = "ID Transaksi: " + trxData.id_transaksi;
+            
+            if (trxData.qr_code_url) {
+                document.getElementById('img-qris-code').src = trxData.qr_code_url;
+            }
+        });
+
+        function selesaiPembayaran() {
+            if (confirm("Pastikan Anda sudah menyelesaikan pembayaran via aplikasi e-Wallet/Bank. Lanjutkan?")) {
+                localStorage.removeItem('active_qris_trx');
+                alert("Pembayaran Anda sedang diverifikasi. Terima kasih!");
+                window.location.replace('landing_page.html');
             }
         }
     </script>
