@@ -182,16 +182,44 @@ async function hapusItemKeranjang(event, idProduk, buttonElement) {
 }
 
 // --- FUNGSI MELANJUTKAN TRANSAKSI (CHECKOUT) ---
-function prosesSemuaTransaksi() {
+async function prosesSemuaTransaksi() {
     if (!currentCartItems || currentCartItems.length === 0) {
         alert("Keranjang Anda kosong. Silakan pilih produk terlebih dahulu.");
         return;
     }
 
-    // SIMPAN KE LOCALSTORAGE DENGAN KEY 'checkout_items' agar terbaca di transaksi.html
+    const btnCheckout = document.getElementById('btn-checkout');
+    if (btnCheckout) {
+        btnCheckout.disabled = true;
+        btnCheckout.innerText = "Memproses...";
+    }
+
+    // 1. Simpan ke LocalStorage agar terbaca di halaman transaksi.html
     localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
 
-    // Arahkan ke halaman transaksi
+    // 2. Kirim perintah hapus spesifik ke backend Google Apps Script (Sheet chart)
+    const payload = {
+        action: 'clearCartAfterCheckout',
+        user: namaLogIn,
+        items: currentCartItems // Mengirim daftar item yang dicheckout agar dihapus berdasarkan User & ID Produk
+    };
+
+    try {
+        await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
+        });
+
+        // 3. Bersihkan cache lokal keranjang user tersebut
+        localStorage.removeItem(cacheKey);
+
+    } catch (error) {
+        console.error("Gagal membersihkan keranjang di server:", error);
+    }
+
+    // 4. Arahkan ke halaman transaksi
     window.location.href = 'transaksi.html';
 }
 
@@ -207,7 +235,7 @@ function logout() {
     }
 }
 
-// --- EKSKUSI GLOBAL WINDOW (Mencegah ReferenceError pada onclick HTML) ---
+// --- EKSKUSI GLOBAL WINDOW ---
 window.prosesSemuaTransaksi = prosesSemuaTransaksi;
 window.hapusItemKeranjang = hapusItemKeranjang;
 window.bukaKeranjang = bukaKeranjang;
