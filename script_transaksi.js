@@ -106,10 +106,9 @@ async function prosesPembayaranAkhir() {
         btnSubmit.innerText = "Memproses Pesanan...";
     }
 
-    // Tentukan status awal: Tunai = "Sedang Dikemas", QRIS = "Belum Bayar"
     const statusAwal = (metodePembayaran === 'Tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
 
-    // Payload ini 100% selaras dengan endpoint "createTransaction" di Google Apps Script (kode.gs)
+    // Payload dikirim ke Google Apps Script
     const payload = {
         action: "createTransaction",
         user: namaLogIn,
@@ -134,9 +133,20 @@ async function prosesPembayaranAkhir() {
         const result = await response.json();
 
         if (result && result.success) {
+            // KIRIM PERINTAH KEDUA: Hapus data keranjang di Google Sheets (Sheet 'chart')
+            await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                    action: "clearCartAfterCheckout",
+                    user: namaLogIn
+                }),
+                redirect: "follow"
+            }).catch(err => console.error("Gagal membersihkan chart di server:", err));
+
             const idTransaksi = result.id_transaksi || ('TRX-' + Date.now());
 
-            // Simpan riwayat pesanan ke localStorage untuk ditampilkan di order_status.html
+            // Simpan riwayat pesanan ke localStorage
             let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
             const pesananBaru = {
                 id_transaksi: idTransaksi,
@@ -149,7 +159,7 @@ async function prosesPembayaranAkhir() {
             daftarPesanan.unshift(pesananBaru);
             localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
 
-            // Bersihkan keranjang lokal (Frontend) setelah sukses checkout
+            // Bersihkan seluruh cache/penyimpanan keranjang lokal frontend
             localStorage.removeItem('cart');
             localStorage.removeItem('keranjang');
             localStorage.removeItem('cartItems');
@@ -161,7 +171,7 @@ async function prosesPembayaranAkhir() {
 
             if (window.updateCartBadge) window.updateCartBadge();
 
-            // Kondisional alur berdasarkan metode pembayaran
+            // Arahkan ke halaman lanjutan
             if (metodePembayaran === 'QRIS') {
                 const qrisData = {
                     id_transaksi: idTransaksi,
