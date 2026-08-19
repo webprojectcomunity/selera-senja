@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Pesanan - Sistem Transaksi</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .order-card {
+            background: #fafafa;
+            border: 1px solid #e1e8ed;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .order-id {
+            font-weight: bold;
+            color: #3498db;
+        }
+        .order-status {
+            background: #e67e22;
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .order-status.dikemas { background: #f39c12; }
+        .order-status.selesai { background: #2ecc71; }
+        .order-status.belum-bayar { background: #e74c3c; }
+        
+        .order-body p {
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        .item-list {
+            margin-top: 8px;
+            padding-left: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+        .nav-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        .nav-btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Riwayat & Status Pesanan</h2>
+        
+        <div id="order-container">
+            <p style="text-align: center; color: #7f8c8d;">Memuat data pesanan...</p>
+        </div>
+
+        <button type="button" class="nav-btn" onclick="window.location.href='index.html'">Kembali ke Beranda</button>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
+        const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!namaLogIn) {
+                alert("Sesi berakhir, silakan login kembali.");
+                window.location.replace('index.html');
+                return;
+            }
+
+            loadUserOrders();
+        });
+
+        async function loadUserOrders() {
+            const container = document.getElementById('order-container');
+
+            // 1. Ambil dari LocalStorage terlebih dahulu untuk respons instan
+            let localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
+
+            if (localOrders.length > 0) {
+                renderOrders(localOrders);
+            }
+
+            // 2. Tarik data terbaru dari Google Apps Script (Sheet Transaksi) di latar belakang
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=getTransactions&user=${encodeURIComponent(namaLogIn.trim())}`);
+                const result = await response.json();
+
+                if (result && result.success && Array.isArray(result.data)) {
+                    // Gabungkan atau gunakan data server jika tersedia
+                    renderOrders(result.data);
+                }
+            } catch (error) {
+                console.error("Gagal sinkronisasi pesanan dari server:", error);
+                if (localOrders.length === 0) {
+                    container.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data pesanan.</p>`;
+                }
+            }
+        }
+
+        function renderOrders(orders) {
+            const container = document.getElementById('order-container');
+            if (!orders || orders.length === 0) {
+                container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Belum ada pesanan yang dibuat.</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            orders.forEach(order => {
+                const statusClass = (order.status || '').toLowerCase().replace(/\s+/g, '-');
+                
+                let itemsHtml = '';
+                if (Array.isArray(order.items)) {
+                    itemsHtml = '<ul class="item-list">';
+                    order.items.forEach(item => {
+                        const nama = item.nama_produk || 'Produk';
+                        const qty = item.jumlah || item.qty || 1;
+                        const subtotal = item.total_harga || (item.harga_satuan * qty) || 0;
+                        itemsHtml += `<li>${nama} (${qty}x) - Rp ${Number(subtotal).toLocaleString('id-ID')}</li>`;
+                    });
+                    itemsHtml += '</ul>';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.innerHTML = `
+                    <div class="order-header">
+                        <span class="order-id">${order.id_transaksi || 'TRX-XXXX'}</span>
+                        <span class="order-status ${statusClass}">${order.status || 'Pending'}</span>
+                    </div>
+                    <div class="order-body">
+                        <p><strong>Tanggal:</strong> ${order.tanggal || '-'}</p>
+                        <p><strong>Metode Pembayaran:</strong> ${order.metode_pembayaran || 'Tunai'}</p>
+                        <p><strong>Total Bayar:</strong> <span style="color: #27ae60; font-weight: bold;">Rp ${Number(order.total_bayar || 0).toLocaleString('id-ID')}</span></p>
+                        <p style="margin-top: 8px;"><strong>Rincian Item:</strong></p>
+                        ${itemsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
