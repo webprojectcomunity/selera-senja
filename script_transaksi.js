@@ -133,17 +133,18 @@ async function prosesPembayaranAkhir() {
         const result = await response.json();
 
         if (result && result.success) {
-            // KIRIM PERINTAH KEDUA: Hapus data keranjang di Google Sheets (Sheet 'chart')
+        
+           // KIRIM PERINTAH KEDUA: Hapus data keranjang spesifik di Google Sheets (Sheet 'chart')
             await fetch(APPS_SCRIPT_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({
                     action: "clearCartAfterCheckout",
-                    user: namaLogIn
+                    user: namaLogIn,
+                    items: currentCartData // <-- SANGAT PENTING: Mengirim daftar item yang dicheckout agar dicocokkan dengan ID Produk
                 }),
                 redirect: "follow"
             }).catch(err => console.error("Gagal membersihkan chart di server:", err));
-
             const idTransaksi = result.id_transaksi || ('TRX-' + Date.now());
 
             // Simpan riwayat pesanan ke localStorage
