@@ -1,13 +1,25 @@
 // --- KONFIGURASI API ---
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
 
-// --- INISIALISASI DATA KERANJANG & TOTAL BAYAR (Cakupan Global) ---
-const currentCartData = JSON.parse(localStorage.getItem('checkout_items') || '[]');
+// --- INISIALISASI DATA KERANJANG & TOTAL BAYAR (Mendukung Berbagai Kunci Storage) ---
+const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
+const specificCacheKey = namaLogIn ? `cart_cache_${namaLogIn.trim()}` : '';
+
+// Cek data dari berbagai kemungkinan key penyimpanan keranjang
+const rawCartData = 
+    localStorage.getItem('checkout_items') || 
+    (specificCacheKey ? localStorage.getItem(specificCacheKey) : null) || 
+    localStorage.getItem('cart') || 
+    localStorage.getItem('keranjang') || 
+    localStorage.getItem('cartItems') || 
+    localStorage.getItem('spg_cart') || '[]';
+
+const currentCartData = JSON.parse(rawCartData);
 
 let totalBayar = 0;
 currentCartData.forEach(item => {
     // Ambil harga dan bersihkan karakter non-angka
-    const hargaRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : (item.harga_satuan * item.jumlah);
+    const hargaRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : ((item.harga_satuan || item.harga || 0) * (item.jumlah || 1));
     totalBayar += parseFloat(hargaRaw) || 0;
 });
 
@@ -17,7 +29,7 @@ function formatRupiah(number) {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Sesi Proteksi / Validasi Data Keranjang Kosong
-    if (currentCartData.length === 0) {
+    if (!currentCartData || currentCartData.length === 0) {
         alert("Tidak ada data produk yang akan di-checkout.");
         window.location.replace('chart.html');
         return;
@@ -35,8 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryContainer.innerHTML = '';
         currentCartData.forEach(item => {
             const nama = item.nama_produk || 'Produk';
-            const qty = item.jumlah || 1;
-            const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : (item.harga_satuan * qty);
+            const qty = item.jumlah || item.qty || 1;
+            const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : ((item.harga_satuan || item.harga || 0) * qty);
             
             const itemRow = document.createElement('div');
             itemRow.style.cssText = "display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #555;";
@@ -120,6 +132,7 @@ async function prosesPembayaranAkhir() {
             localStorage.removeItem('cartItems');
             localStorage.removeItem('spg_cart');
             localStorage.removeItem('checkout_items');
+            if (specificCacheKey) localStorage.removeItem(specificCacheKey);
 
             if (window.updateCartBadge) window.updateCartBadge();
 
