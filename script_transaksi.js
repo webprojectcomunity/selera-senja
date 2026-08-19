@@ -135,59 +135,60 @@ async function prosesPembayaranAkhir() {
         if (result && result.success) {
         
            // KIRIM PERINTAH KEDUA: Hapus data keranjang spesifik di Google Sheets (Sheet 'chart')
-            await fetch(APPS_SCRIPT_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({
-                    action: "clearCartAfterCheckout",
-                    user: namaLogIn,
-                    items: currentCartData // <-- SANGAT PENTING: Mengirim daftar item yang dicheckout agar dicocokkan dengan ID Produk
-                }),
-                redirect: "follow"
-            }).catch(err => console.error("Gagal membersihkan chart di server:", err));
-            const idTransaksi = result.id_transaksi || ('TRX-' + Date.now());
+           await fetch(APPS_SCRIPT_URL, {
+               method: "POST",
+               headers: { "Content-Type": "text/plain;charset=utf-8" },
+               body: JSON.stringify({
+                   action: "clearCartAfterCheckout",
+                   user: namaLogIn,
+                   items: currentCartData // Mengirim daftar item yang dicheckout agar dicocokkan dengan ID Produk
+               }),
+               redirect: "follow"
+           }).catch(err => console.error("Gagal membersihkan chart di server:", err));
 
-            // Simpan riwayat pesanan ke localStorage
-            let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
-            const pesananBaru = {
-                id_transaksi: idTransaksi,
-                tanggal: new Date().toLocaleString('id-ID'),
-                items: currentCartData,
-                total_bayar: totalBayar,
-                metode_pembayaran: metodePembayaran,
-                status: statusAwal
-            };
-            daftarPesanan.unshift(pesananBaru);
-            localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
+           const idTransaksi = result.id_transaksi || ('TRX-' + Date.now());
 
-            // Bersihkan seluruh cache/penyimpanan keranjang lokal frontend
-            localStorage.removeItem('cart');
-            localStorage.removeItem('keranjang');
-            localStorage.removeItem('cartItems');
-            localStorage.removeItem('spg_cart');
-            localStorage.removeItem('checkout_items');
-            if (namaLogIn) {
-                localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
-            }
+           // Simpan riwayat pesanan ke localStorage
+           let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
+           const pesananBaru = {
+               id_transaksi: idTransaksi,
+               tanggal: new Date().toLocaleString('id-ID'),
+               items: currentCartData,
+               total_bayar: totalBayar,
+               metode_pembayaran: metodePembayaran,
+               status: statusAwal
+           };
+           daftarPesanan.unshift(pesananBaru);
+           localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
 
-            if (window.updateCartBadge) window.updateCartBadge();
+           // Bersihkan seluruh cache/penyimpanan keranjang lokal frontend
+           localStorage.removeItem('cart');
+           localStorage.removeItem('keranjang');
+           localStorage.removeItem('cartItems');
+           localStorage.removeItem('spg_cart');
+           localStorage.removeItem('checkout_items');
+           if (namaLogIn) {
+               localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
+           }
 
-            // Arahkan ke halaman lanjutan
-            if (metodePembayaran === 'QRIS') {
-                const qrisData = {
-                    id_transaksi: idTransaksi,
-                    total_bayar: totalBayar,
-                    nama_user: namaLogIn,
-                    qr_code_url: result.qr_code_url || '' 
-                };
-                localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
-                
-                alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
-                window.location.replace('qris_payment.html'); 
-            } else {
-                alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
-                window.location.replace('order_status.html'); 
-            }
+           if (window.updateCartBadge) window.updateCartBadge();
+
+           // Arahkan ke halaman lanjutan
+           if (metodePembayaran === 'QRIS') {
+               const qrisData = {
+                   id_transaksi: idTransaksi,
+                   total_bayar: totalBayar,
+                   nama_user: namaLogIn,
+                   qr_code_url: result.qr_code_url || '' 
+               };
+               localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
+               
+               alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
+               window.location.replace('qris_payment.html'); 
+           } else {
+               alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
+               window.location.replace('order.html'); // Diarahkan langsung ke halaman order.html
+           }
 
         } else {
             alert("Gagal memproses pesanan: " + (result.message || "Terjadi kesalahan server."));
