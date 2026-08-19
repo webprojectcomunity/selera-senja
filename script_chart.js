@@ -51,21 +51,24 @@ function loadCartInstantly() {
         cartList.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat keranjang...</p>`;
     }
 
-    // 2. Tarik data terbaru dari server Google di latar belakang (Background Sync)
+    // 2. Tarik data terbaru dari server Google di latar belakang via JSONP
     fetchCartFromServer();
 }
 
-async function fetchCartFromServer() {
-    const cartList = document.getElementById('cart-list');
-    const totalSection = document.getElementById('total-section');
-    const btnCheckout = document.getElementById('btn-checkout');
+// --- FUNGSI AMBIL DATA DARI SERVER MENGGUNAKAN JSONP (MENGATASI CORS) ---
+function fetchCartFromServer() {
+    const callbackName = 'cartCallback_' + Math.random().toString(36).substring(2, 9);
 
-    try {
-        const resChart = await fetch(APPS_SCRIPT_URL + '?action=getCart&user=' + encodeURIComponent(namaLogIn.trim()));
-        const chartResult = await resChart.json();
+    // Definisikan fungsi callback global untuk menerima data dari Apps Script
+    window[callbackName] = function(chartResult) {
+        // Hapus script tag setelah data berhasil dimuat
+        document.getElementById(callbackName)?.remove();
+        delete window[callbackName];
 
-        if (!chartResult.success || !Array.isArray(chartResult.data)) {
-            throw new Error("Format data server tidak valid");
+        if (!chartResult || !chartResult.success || !Array.isArray(chartResult.data)) {
+            console.error("Format data server tidak valid");
+            handleFetchError();
+            return;
         }
 
         currentCartItems = chartResult.data;
@@ -75,15 +78,34 @@ async function fetchCartFromServer() {
 
         // Render ulang dengan data fresh dari server
         renderCartItems(currentCartItems);
+    };
 
-    } catch (error) {
-        console.error("Gagal sinkronisasi keranjang dari server:", error);
-        // Jika cache lokal juga kosong dan gagal memuat
-        if (currentCartItems.length === 0 && cartList) {
-            cartList.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data keranjang.</p>`;
-            if (totalSection) totalSection.style.display = 'none';
-            if (btnCheckout) btnCheckout.disabled = true;
-        }
+    // Buat elemen script dinamis
+    const script = document.createElement('script');
+    script.id = callbackName;
+    script.src = `${APPS_SCRIPT_URL}?action=getCart&user=${encodeURIComponent(namaLogIn.trim())}&callback=${callbackName}`;
+    
+    // Tangani jika terjadi error jaringan pada pemuatan script
+    script.onerror = function() {
+        document.getElementById(callbackName)?.remove();
+        delete window[callbackName];
+        console.error("Gagal sinkronisasi keranjang via JSONP.");
+        handleFetchError();
+    };
+
+    document.body.appendChild(script);
+}
+
+// --- FUNGSI PENANGANAN GAGAL AMBIL DATA ---
+function handleFetchError() {
+    const cartList = document.getElementById('cart-list');
+    const totalSection = document.getElementById('total-section');
+    const btnCheckout = document.getElementById('btn-checkout');
+
+    if (currentCartItems.length === 0 && cartList) {
+        cartList.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data keranjang.</p>`;
+        if (totalSection) totalSection.style.display = 'none';
+        if (btnCheckout) btnCheckout.disabled = true;
     }
 }
 
