@@ -56,42 +56,120 @@ function loadCartInstantly() {
 }
 
 // --- FUNGSI AMBIL DATA DARI SERVER MENGGUNAKAN JSONP (MENGATASI CORS) ---
+// --- FUNGSI AMBIL DATA DARI SERVER MENGGUNAKAN JSONP ---
 function fetchCartFromServer() {
-    const callbackName = 'cartCallback_' + Math.random().toString(36).substring(2, 9);
 
-    // Definisikan fungsi callback global untuk menerima data dari Apps Script
+    const callbackName =
+        'cartCallback_' +
+        Math.random().toString(36).substring(2, 9);
+
+    // Definisikan callback global
     window[callbackName] = function(chartResult) {
-        // Hapus script tag setelah data berhasil dimuat
-        document.getElementById(callbackName)?.remove();
+
+        console.log("=================================");
+        console.log("RESPONSE JSONP DARI APPS SCRIPT");
+        console.log("=================================");
+        console.log("Full response:", chartResult);
+        console.log("success:", chartResult?.success);
+        console.log("data:", chartResult?.data);
+        console.log(
+            "data adalah array:",
+            Array.isArray(chartResult?.data)
+        );
+
+        // Hapus script setelah callback diterima
+        const scriptElement =
+            document.getElementById(callbackName);
+
+        if (scriptElement) {
+            scriptElement.remove();
+        }
+
         delete window[callbackName];
 
-        if (!chartResult || !chartResult.success || !Array.isArray(chartResult.data)) {
-            console.error("Format data server tidak valid");
+
+        // Validasi response
+        if (
+            !chartResult ||
+            chartResult.success !== true ||
+            !Array.isArray(chartResult.data)
+        ) {
+
+            console.error(
+                "FORMAT DATA SERVER TIDAK VALID:",
+                chartResult
+            );
+
             handleFetchError();
             return;
         }
 
-        currentCartItems = chartResult.data;
-        
-        // Simpan versi terbaru ke localStorage
-        localStorage.setItem(cacheKey, JSON.stringify(currentCartItems));
 
-        // Render ulang dengan data fresh dari server
+        // Data valid
+        currentCartItems = chartResult.data;
+
+        console.log(
+            "Keranjang berhasil dimuat:",
+            currentCartItems
+        );
+
+
+        // Simpan cache
+        localStorage.setItem(
+            cacheKey,
+            JSON.stringify(currentCartItems)
+        );
+
+
+        // Render data
         renderCartItems(currentCartItems);
     };
 
-    // Buat elemen script dinamis
+
+    // Buat script JSONP
     const script = document.createElement('script');
+
     script.id = callbackName;
-    script.src = `${APPS_SCRIPT_URL}?action=getCart&user=${encodeURIComponent(namaLogIn.trim())}&callback=${callbackName}`;
-    
-    // Tangani jika terjadi error jaringan pada pemuatan script
-    script.onerror = function() {
-        document.getElementById(callbackName)?.remove();
+
+    script.src =
+        `${APPS_SCRIPT_URL}` +
+        `?action=getCart` +
+        `&user=${encodeURIComponent(namaLogIn.trim())}` +
+        `&callback=${encodeURIComponent(callbackName)}`;
+
+    console.log("Memanggil API JSONP:");
+    console.log(script.src);
+
+
+    // Error loading
+    script.onerror = function(error) {
+
+        console.error(
+            "GAGAL SINKRONISASI KERANJANG VIA JSONP"
+        );
+
+        console.error(
+            "URL:",
+            script.src
+        );
+
+        console.error(
+            "Error:",
+            error
+        );
+
+        const scriptElement =
+            document.getElementById(callbackName);
+
+        if (scriptElement) {
+            scriptElement.remove();
+        }
+
         delete window[callbackName];
-        console.error("Gagal sinkronisasi keranjang via JSONP.");
+
         handleFetchError();
     };
+
 
     document.body.appendChild(script);
 }
