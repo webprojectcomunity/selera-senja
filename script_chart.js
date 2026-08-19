@@ -181,14 +181,14 @@ async function hapusItemKeranjang(event, idProduk, buttonElement) {
     }
 }
 
-// --- FUNGSI MELANJUTKAN TRANSAKSI ---
+// --- FUNGSI MELANJUTKAN TRANSAKSI (CHECKOUT) ---
 function prosesSemuaTransaksi() {
     if (!currentCartItems || currentCartItems.length === 0) {
         alert("Keranjang Anda kosong. Silakan pilih produk terlebih dahulu.");
         return;
     }
 
-    // Simpan seluruh data keranjang ke localStorage untuk dibaca oleh transaksi.html
+    // SIMPAN KE LOCALSTORAGE DENGAN KEY 'checkout_items' agar terbaca di transaksi.html
     localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
 
     // Arahkan ke halaman transaksi
