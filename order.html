@@ -57,7 +57,7 @@
             font-size: 12px;
             font-weight: 600;
         }
-        .order-status.dikemas { background: #f39c12; }
+        .order-status.dikemas, .order-status.sedang-dikemas { background: #f39c12; }
         .order-status.selesai { background: #2ecc71; }
         .order-status.belum-bayar { background: #e74c3c; }
         
@@ -125,6 +125,8 @@
 
             if (localOrders.length > 0) {
                 renderOrders(localOrders);
+            } else {
+                container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan...</p>`;
             }
 
             // 2. Tarik data terbaru dari Google Apps Script (Sheet Transaksi) di latar belakang
@@ -133,8 +135,24 @@
                 const result = await response.json();
 
                 if (result && result.success && Array.isArray(result.data)) {
-                    // Gabungkan atau gunakan data server jika tersedia
-                    renderOrders(result.data);
+                    if (result.data.length > 0) {
+                        // Gabungkan data server dengan localOrders (cegah duplikasi id_transaksi)
+                        const combinedOrders = [...result.data];
+                        localOrders.forEach(localItem => {
+                            const exists = combinedOrders.some(serverItem => 
+                                (serverItem.id_transaksi && localItem.id_transaksi && serverItem.id_transaksi === localItem.id_transaksi)
+                            );
+                            if (!exists) {
+                                combinedOrders.push(localItem);
+                            }
+                        });
+                        renderOrders(combinedOrders);
+                    } else if (localOrders.length > 0) {
+                        // Server mengembalikan array kosong [], tetapi localOrders memiliki data -> TETAP tampilkan localOrders
+                        renderOrders(localOrders);
+                    } else {
+                        renderOrders([]);
+                    }
                 }
             } catch (error) {
                 console.error("Gagal sinkronisasi pesanan dari server:", error);
@@ -155,14 +173,26 @@
             orders.forEach(order => {
                 const statusClass = (order.status || '').toLowerCase().replace(/\s+/g, '-');
                 
-                let itemsHtml = '';
+                // Penanganan parsing item (bisa berupa Array atau String JSON dari Google Sheets)
+                let itemsArray = [];
                 if (Array.isArray(order.items)) {
+                    itemsArray = order.items;
+                } else if (typeof order.items === 'string') {
+                    try {
+                        itemsArray = JSON.parse(order.items);
+                    } catch (e) {
+                        itemsArray = [];
+                    }
+                }
+
+                let itemsHtml = '';
+                if (itemsArray.length > 0) {
                     itemsHtml = '<ul class="item-list">';
-                    order.items.forEach(item => {
-                        const nama = item.nama_produk || 'Produk';
+                    itemsArray.forEach(item => {
+                        const nama = item.nama_produk || item.nama || 'Produk';
                         const qty = item.jumlah || item.qty || 1;
-                        const subtotal = item.total_harga || (item.harga_satuan * qty) || 0;
-                        itemsHtml += `<li>${nama} (${qty}x) - Rp ${Number(subtotal).toLocaleString('id-ID')}</li>`;
+                        const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : ((item.harga_satuan || item.harga || 0) * qty);
+                        itemsHtml += `<li>${nama} (${qty}x) - Rp ${Number(subtotal || 0).toLocaleString('id-ID')}</li>`;
                     });
                     itemsHtml += '</ul>';
                 }
