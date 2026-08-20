@@ -198,44 +198,77 @@
             }, 1000);
         }
 
-        async function konfirmasiSudahBayar() {
-            if (!confirm("Apakah Anda yakin sudah menyelesaikan pembayaran QRIS? Status pesanan akan diperbarui menjadi 'Sedang Dikemas'.")) {
-                return;
-            }
-
-            const rawData = localStorage.getItem('active_qris_trx');
-            if (!rawData) return;
-            const qrisData = JSON.parse(rawData);
-
-            // Perbarui status di localStorage untuk pesanan terkait
-            let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
-            daftarPesanan = daftarPesanan.map(order => {
-                if (order.id_transaksi === qrisData.id_transaksi) {
-                    order.status = 'Sedang Dikemas';
-                }
-                return order;
-            });
-            localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
-
-            // Kirim request ke Google Apps Script untuk update status transaksi di Sheet
-            try {
-                await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: "updateStatusTransaction",
-                        id_transaksi: qrisData.id_transaksi,
-                        status: "Sedang Dikemas"
-                    })
-                });
-            } catch (err) {
-                console.error("Gagal memperbarui status di server:", err);
-            }
-
-            localStorage.removeItem('active_qris_trx');
-            alert("Pembayaran dikonfirmasi! Pesanan Anda sedang diproses.");
-            window.location.replace('order.html');
+       async function konfirmasiSudahBayar() {
+        if (!confirm("Apakah Anda yakin sudah menyelesaikan pembayaran QRIS? Status pesanan akan diperbarui menjadi 'Sedang Dikemas'.")) {
+            return;
         }
 
+        const rawData = localStorage.getItem('active_qris_trx');
+        if (!rawData) return;
+        const qrisData = JSON.parse(rawData);
+
+        // 1. Perbarui status di localStorage terlebih dahulu
+        let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
+        daftarPesanan = daftarPesanan.map(order => {
+            if (order.id_transaksi === qrisData.id_transaksi) {
+                order.status = 'Sedang Dikemas';
+            }
+            return order;
+        });
+        localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
+
+        // Payload untuk memperbarui status di Google Sheets
+        const payload = {
+            action: "updateStatusTransaction",
+            id_transaksi: qrisData.id_transaksi,
+            status: "Sedang Dikemas"
+        };
+
+        try {
+            // 2. Gunakan Hidden Form & Iframe agar tembus CORS dan sukses masuk ke Google Sheet
+            let iframe = document.getElementById('hidden_iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.name = 'hidden_iframe';
+                iframe.id = 'hidden_iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+            }
+
+            let form = document.getElementById('hidden_form_qris');
+            if (!form) {
+                form = document.createElement('form');
+                form.id = 'hidden_form_qris';
+                form.method = 'POST';
+                form.action = APPS_SCRIPT_URL;
+                form.target = 'hidden_iframe';
+                document.body.appendChild(form);
+            } else {
+                form.innerHTML = '';
+            }
+
+            const inputPayload = document.createElement('input');
+            inputPayload.type = 'hidden';
+            inputPayload.name = 'payload';
+            inputPayload.value = JSON.stringify(payload);
+            form.appendChild(inputPayload);
+
+            // Submit form secara tersembunyi
+            form.submit();
+
+            // Beri jeda 1 detik agar data sempat terkirim ke server sebelum pindah halaman
+            setTimeout(() => {
+                localStorage.removeItem('active_qris_trx');
+                alert("Pembayaran dikonfirmasi! Pesanan Anda sedang diproses.");
+                window.location.replace('order.html');
+            }, 1000);
+
+        } catch (err) {
+            console.error("Gagal memperbarui status di server:", err);
+            alert("Terjadi kesalahan koneksi, namun status lokal telah diperbarui.");
+            window.location.replace('order.html');
+        }
+    }
         function batalkanPesanan() {
             localStorage.removeItem('active_qris_trx');
             alert("Pembayaran dibatalkan.");
