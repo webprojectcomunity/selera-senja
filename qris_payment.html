@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembayaran QRIS - Sistem Transaksi</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: #fff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 20px;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+        .trx-info {
+            background: #fafafa;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .trx-info p {
+            font-size: 13px;
+            margin-bottom: 4px;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+        }
+        .trx-info p span:last-child {
+            font-weight: 600;
+            color: #333;
+        }
+        .qris-box {
+            background: #fff;
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        /* Simulasi tampilan QR Code menggunakan CSS/SVG */
+        .qris-placeholder {
+            width: 200px;
+            height: 200px;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ddd;
+            margin: 0 auto;
+            color: #555;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .timer-box {
+            font-size: 14px;
+            color: #e74c3c;
+            font-weight: bold;
+            margin-bottom: 20px;
+            background: #fdf2f2;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-confirm {
+            background: #2ecc71;
+            color: white;
+        }
+        .btn-confirm:hover {
+            background: #27ae60;
+        }
+        .btn-cancel {
+            background: #e74c3c;
+            color: white;
+        }
+        .btn-cancel:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Scan QRIS untuk Pembayaran</h2>
+        <p class="subtitle">Gunakan aplikasi e-Wallet atau m-Banking Anda</p>
+
+        <div class="trx-info">
+            <p><span>No. Transaksi:</span> <span id="lbl-trx-id">-</span></p>
+            <p><span>Total Tagihan:</span> <span id="lbl-total-bayar" style="color: #27ae60;">Rp 0</span></p>
+            <p><span>Nama Akun:</span> <span id="lbl-user">-</span></p>
+        </div>
+
+        <div class="qris-box">
+            <!-- Tempat QR Code (Bisa diganti tag <img> jika Anda memiliki link gambar QR statis/dinamis) -->
+            <div class="qris-placeholder">
+                <span style="font-size: 32px; margin-bottom: 5px;">📷</span>
+                <span>QRIS CODE</span>
+                <span style="font-size: 10px; color: #999; font-weight: normal; margin-top: 5px;">(Simulasi Pembayaran)</span>
+            </div>
+        </div>
+
+        <div class="timer-box" id="countdown-timer">
+            Sisa Waktu Pembayaran: 15:00
+        </div>
+
+        <div class="btn-group">
+            <button type="button" class="btn btn-cancel" onclick="batalkanPesanan()">Batalkan</button>
+            <button type="button" class="btn btn-confirm" onclick="konfirmasiSudahBayar()">Saya Sudah Bayar</button>
+        </div>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const rawData = localStorage.getItem('active_qris_trx');
+            if (!rawData) {
+                alert("Tidak ada sesi pembayaran QRIS yang aktif.");
+                window.location.replace('order.html');
+                return;
+            }
+
+            const qrisData = JSON.parse(rawData);
+            
+            // Tampilkan data ke UI
+            document.getElementById('lbl-trx-id').innerText = qrisData.id_transaksi || '-';
+            document.getElementById('lbl-total-bayar').innerText = formatRupiah(qrisData.total_bayar || 0);
+            document.getElementById('lbl-user').innerText = qrisData.nama_user || '-';
+
+            // Jalankan hitung mundur 15 menit
+            mulaiTimer(15 * 60);
+        });
+
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+        }
+
+        function mulaiTimer(durasiDetik) {
+            let timer = durasiDetik, minutes, seconds;
+            const display = document.getElementById('countdown-timer');
+
+            const interval = setInterval(() => {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                display.innerText = `Sisa Waktu Pembayaran: ${minutes}:${seconds}`;
+
+                if (--timer < 0) {
+                    clearInterval(interval);
+                    alert("Waktu pembayaran QRIS telah habis.");
+                    batalkanPesanan();
+                }
+            }, 1000);
+        }
+
+        async function konfirmasiSudahBayar() {
+            if (!confirm("Apakah Anda yakin sudah menyelesaikan pembayaran QRIS? Status pesanan akan diperbarui menjadi 'Sedang Dikemas'.")) {
+                return;
+            }
+
+            const rawData = localStorage.getItem('active_qris_trx');
+            if (!rawData) return;
+            const qrisData = JSON.parse(rawData);
+
+            // Perbarui status di localStorage untuk pesanan terkait
+            let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
+            daftarPesanan = daftarPesanan.map(order => {
+                if (order.id_transaksi === qrisData.id_transaksi) {
+                    order.status = 'Sedang Dikemas';
+                }
+                return order;
+            });
+            localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
+
+            // Kirim request ke Google Apps Script untuk update status transaksi di Sheet
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "updateStatusTransaction",
+                        id_transaksi: qrisData.id_transaksi,
+                        status: "Sedang Dikemas"
+                    })
+                });
+            } catch (err) {
+                console.error("Gagal memperbarui status di server:", err);
+            }
+
+            localStorage.removeItem('active_qris_trx');
+            alert("Pembayaran dikonfirmasi! Pesanan Anda sedang diproses.");
+            window.location.replace('order.html');
+        }
+
+        function batalkanPesanan() {
+            localStorage.removeItem('active_qris_trx');
+            alert("Pembayaran dibatalkan.");
+            window.location.replace('order.html');
+        }
+    </script>
+</body>
+</html>
