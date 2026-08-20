@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- EKSEKUSI KIRIM TRANSAKSI KE GOOGLE APPS SCRIPT (MENGGUNAKAN HIDDEN FORM) ---
+// --- EKSEKUSI KIRIM TRANSAKSI KE GOOGLE APPS SCRIPT (MENGGUNAKAN HIDDEN FORM) ---
 async function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
@@ -122,7 +123,7 @@ async function prosesPembayaranAkhir() {
         items: currentCartData
     };
 
-    // Fungsi pembantu untuk membersihkan localStorage keranjang
+    // Fungsi pembantu untuk membersihkan keranjang lokal
     function bersihkanKeranjangLokal() {
         localStorage.removeItem('cart');
         localStorage.removeItem('keranjang');
@@ -186,19 +187,6 @@ async function prosesPembayaranAkhir() {
 
         // --- 3. SUBMIT FORM KE GOOGLE APPS SCRIPT ---
         form.submit();
-
-        // Simpan riwayat pesanan ke localStorage secara lokal
-        let daftarPesanan = JSON.parse(localStorage.getItem('user_orders') || '[]');
-        const pesananBaru = {
-            id_transaksi: idTransaksi,
-            tanggal: new Date().toLocaleString('id-ID'),
-            items: currentCartData,
-            total_bayar: totalBayar,
-            metode_pembayaran: metodePembayaran,
-            status: statusAwal
-        };
-        daftarPesanan.unshift(pesananBaru);
-        localStorage.setItem('user_orders', JSON.stringify(daftarPesanan));
 
         // Kirim perintah susulan untuk membersihkan cart di database Google Sheets lewat iframe
         setTimeout(() => {
