@@ -56,120 +56,66 @@ function loadCartInstantly() {
 }
 
 // --- FUNGSI AMBIL DATA DARI SERVER MENGGUNAKAN JSONP (MENGATASI CORS) ---
-// --- FUNGSI AMBIL DATA DARI SERVER MENGGUNAKAN JSONP ---
 function fetchCartFromServer() {
-
-    const callbackName =
-        'cartCallback_' +
-        Math.random().toString(36).substring(2, 9);
+    const callbackName = 'cartCallback_' + Math.random().toString(36).substring(2, 9);
 
     // Definisikan callback global
     window[callbackName] = function(chartResult) {
-
         console.log("=================================");
         console.log("RESPONSE JSONP DARI APPS SCRIPT");
         console.log("=================================");
         console.log("Full response:", chartResult);
         console.log("success:", chartResult?.success);
         console.log("data:", chartResult?.data);
-        console.log(
-            "data adalah array:",
-            Array.isArray(chartResult?.data)
-        );
+        console.log("data adalah array:", Array.isArray(chartResult?.data));
 
         // Hapus script setelah callback diterima
-        const scriptElement =
-            document.getElementById(callbackName);
-
+        const scriptElement = document.getElementById(callbackName);
         if (scriptElement) {
             scriptElement.remove();
         }
-
         delete window[callbackName];
 
-
         // Validasi response
-        if (
-            !chartResult ||
-            chartResult.success !== true ||
-            !Array.isArray(chartResult.data)
-        ) {
-
-            console.error(
-                "FORMAT DATA SERVER TIDAK VALID:",
-                chartResult
-            );
-
+        if (!chartResult || chartResult.success !== true || !Array.isArray(chartResult.data)) {
+            console.error("FORMAT DATA SERVER TIDAK VALID:", chartResult);
             handleFetchError();
             return;
         }
 
-
         // Data valid
         currentCartItems = chartResult.data;
-
-        console.log(
-            "Keranjang berhasil dimuat:",
-            currentCartItems
-        );
-
+        console.log("Keranjang berhasil dimuat:", currentCartItems);
 
         // Simpan cache
-        localStorage.setItem(
-            cacheKey,
-            JSON.stringify(currentCartItems)
-        );
-
+        localStorage.setItem(cacheKey, JSON.stringify(currentCartItems));
 
         // Render data
         renderCartItems(currentCartItems);
     };
 
-
     // Buat script JSONP
     const script = document.createElement('script');
-
     script.id = callbackName;
-
-    script.src =
-        `${APPS_SCRIPT_URL}` +
-        `?action=getCart` +
-        `&user=${encodeURIComponent(namaLogIn.trim())}` +
-        `&callback=${encodeURIComponent(callbackName)}`;
+    script.src = `${APPS_SCRIPT_URL}?action=getCart&user=${encodeURIComponent(namaLogIn.trim())}&callback=${encodeURIComponent(callbackName)}`;
 
     console.log("Memanggil API JSONP:");
     console.log(script.src);
 
-
     // Error loading
     script.onerror = function(error) {
+        console.error("GAGAL SINKRONISASI KERANJANG VIA JSONP");
+        console.error("URL:", script.src);
+        console.error("Error:", error);
 
-        console.error(
-            "GAGAL SINKRONISASI KERANJANG VIA JSONP"
-        );
-
-        console.error(
-            "URL:",
-            script.src
-        );
-
-        console.error(
-            "Error:",
-            error
-        );
-
-        const scriptElement =
-            document.getElementById(callbackName);
-
+        const scriptElement = document.getElementById(callbackName);
         if (scriptElement) {
             scriptElement.remove();
         }
-
         delete window[callbackName];
 
         handleFetchError();
     };
-
 
     document.body.appendChild(script);
 }
@@ -247,11 +193,10 @@ async function hapusItemKeranjang(event, idProduk, buttonElement) {
 
     if (!confirm("Apakah Anda yakin ingin menghapus produk ini dari keranjang?")) return;
 
-    // Kunci tombol tindakan
     buttonElement.disabled = true;
     buttonElement.innerText = "...";
 
-    // 1. Hapus secara instan dari tampilan lokal & update cache (Optimistic UI)
+    // 1. Hapus secara instan dari tampilan lokal & update cache
     currentCartItems = currentCartItems.filter(item => String(item.id_produk).trim() !== String(idProduk).trim());
     renderCartItems(currentCartItems);
     localStorage.setItem(cacheKey, JSON.stringify(currentCartItems));
@@ -265,18 +210,15 @@ async function hapusItemKeranjang(event, idProduk, buttonElement) {
     };
 
     try {
-        // 2. Kirim perintah hapus ke server di latar belakang
         await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify(payload)
         });
-
     } catch (error) {
         console.error("Gagal menghapus item di server:", error);
         alert("Gagal terhubung ke jaringan.");
-        // Ambil ulang data dari server jika terjadi kendala jaringan
         fetchCartFromServer();
     }
 }
@@ -294,33 +236,62 @@ async function prosesSemuaTransaksi() {
         btnCheckout.innerText = "Memproses...";
     }
 
-    // 1. Simpan ke LocalStorage agar terbaca di halaman transaksi.html
-    localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
+    const idTransaksi = 'TRX-' + Date.now();
 
-    // 2. Kirim perintah hapus spesifik ke backend Google Apps Script (Sheet chart)
-    const payload = {
+    // 1. Payload untuk membuat transaksi di sheet 'transaksi'
+    const payloadTransaksi = {
+        action: 'createTransaction',
+        id_transaksi: idTransaksi,
+        user: namaLogIn,
+        total_bayar: currentCartItems.reduce((sum, item) => {
+            let t = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : 0;
+            return sum + (t || (parseFloat(item.harga_satuan || 0) * parseInt(item.jumlah || 1)));
+        }, 0),
+        metode_pembayaran: 'QRIS / Transfer',
+        status: 'Sedang Dikemas',
+        catatan: 'Pesanan via Web Keranjang',
+        items: currentCartItems
+    };
+
+    // 2. Payload untuk menghapus item di sheet 'chart'
+    const payloadClearCart = {
         action: 'clearCartAfterCheckout',
         user: namaLogIn,
-        items: currentCartItems // Mengirim daftar item yang dicheckout agar dihapus berdasarkan User & ID Produk
+        items: currentCartItems
     };
 
     try {
+        // Kirim data transaksi baru ke server
         await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', 
+            mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payloadTransaksi)
         });
 
-        // 3. Bersihkan cache lokal keranjang user tersebut
+        // Kirim perintah hapus keranjang ke server
+        await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payloadClearCart)
+        });
+
+        // Simpan data checkout sementara & bersihkan cache lokal
+        localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
         localStorage.removeItem(cacheKey);
 
-    } catch (error) {
-        console.error("Gagal membersihkan keranjang di server:", error);
-    }
+        // Arahkan ke halaman transaksi/status pesanan
+        window.location.href = 'transaksi.html';
 
-    // 4. Arahkan ke halaman transaksi
-    window.location.href = 'transaksi.html';
+    } catch (error) {
+        console.error("Gagal memproses checkout:", error);
+        alert("Terjadi kesalahan jaringan saat memproses transaksi.");
+        if (btnCheckout) {
+            btnCheckout.disabled = false;
+            btnCheckout.innerText = "Lanjutkan Pembayaran";
+        }
+    }
 }
 
 // --- FUNGSI NAVIGASI LANDING PAGE ---
