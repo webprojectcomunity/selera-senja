@@ -89,22 +89,32 @@ function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
 
-    // Tangkap pilihan metode pembayaran secara akurat dari berbagai kemungkinan atribut HTML
-    const selectedPayment = document.querySelector('input[name="payment_method"]:checked') || 
-                            document.querySelector('input[name="metode"]:checked') || 
-                            document.querySelector('input[name="pembayaran"]:checked') ||
-                            document.querySelector('input[type="radio"]:checked');
-                            
-    const selectPaymentElem = document.getElementById('metode-pembayaran') || document.getElementById('payment_method');
+    // --- PERBAIKAN UTAMA PENANGKAPAN METODE PEMBAYARAN ---
+    // Mencari radio button yang dipilih berdasarkan berbagai kemungkinan nama atribut HTML
+    let metodePembayaran = "Tunai"; // Default fallback
     
-    let metodePembayaran = 'Tunai'; // Default aman
-    if (selectedPayment) {
-        metodePembayaran = selectedPayment.value;
-    } else if (selectPaymentElem) {
-        metodePembayaran = selectPaymentElem.value;
+    const checkedRadio = document.querySelector('input[type="radio"]:checked');
+    if (checkedRadio) {
+        // Ambil dari value radio, atau jika value kosong ambil dari teks label di dekatnya
+        metodePembayaran = checkedRadio.value || checkedRadio.getAttribute('id') || 'Tunai';
+    } else {
+        // Jika menggunakan elemen select/dropdown
+        const selectElem = document.getElementById('metode-pembayaran') || document.getElementById('payment_method');
+        if (selectElem) {
+            metodePembayaran = selectElem.value;
+        }
     }
 
-    // --- DEBUGGING: Cek hasil tangkapan di Console Browser (F12) ---
+    // Normalisasi teks agar konsisten (misal: "tunai" jadi "Tunai", "qris" jadi "QRIS")
+    if (metodePembayaran.toLowerCase().includes('tunai') || metodePembayaran.toLowerCase().includes('cash')) {
+        metodePembayaran = 'Tunai';
+    } else if (metodePembayaran.toLowerCase().includes('qris')) {
+        metodePembayaran = 'QRIS';
+    } else if (metodePembayaran.toLowerCase().includes('transfer') || metodePembayaran.toLowerCase().includes('tf')) {
+        metodePembayaran = 'Transfer';
+    }
+
+    // --- DEBUGGING: Cek hasil tangkapan di Console Browser (Tekan F12) ---
     console.log("METODE PEMBAYARAN TERPILIH:", metodePembayaran);
 
     const catatanElem = document.getElementById('catatan-transaksi');
@@ -119,8 +129,8 @@ function prosesPembayaranAkhir() {
         btnSubmit.innerText = "Memproses Pesanan...";
     }
 
-    // Tentukan status awal berdasarkan metode pembayaran
-    const statusAwal = (metodePembayaran.toLowerCase() === 'tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
+    // Tentukan status awal berdasarkan metode pembayaran yang benar-benar terpilih
+    const statusAwal = (metodePembayaran.toUpperCase() === 'TUNAI') ? 'Sedang Dikemas' : 'Belum Bayar';
     const idTransaksi = 'TRX-' + Date.now();
 
     const payload = {
