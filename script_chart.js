@@ -205,8 +205,8 @@ async function hapusItemKeranjang(event, idProduk, buttonElement) {
     }
 }
 
-// --- FUNGSI MELANJUTKAN TRANSAKSI (CHECKOUT) ---
-async function prosesSemuaTransaksi() {
+// --- FUNGSI MELANJUTKAN KE HALAMAN CHECKOUT ---
+function prosesSemuaTransaksi() {
     if (!currentCartItems || currentCartItems.length === 0) {
         alert("Keranjang Anda kosong. Silakan pilih produk terlebih dahulu.");
         return;
@@ -218,62 +218,11 @@ async function prosesSemuaTransaksi() {
         btnCheckout.innerText = "Memproses...";
     }
 
-    const idTransaksi = 'TRX-' + Date.now();
+    // 1. Simpan item keranjang ke localStorage untuk dibaca oleh checkout.html
+    localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
 
-    // 1. Payload untuk membuat transaksi di sheet 'transaksi'
-    const payloadTransaksi = {
-        action: 'createTransaction',
-        id_transaksi: idTransaksi,
-        user: namaLogIn,
-        total_bayar: currentCartItems.reduce((sum, item) => {
-            let t = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : 0;
-            return sum + (t || (parseFloat(item.harga_satuan || 0) * parseInt(item.jumlah || 1)));
-        }, 0),
-        metode_pembayaran: 'QRIS / Transfer',
-        status: 'Sedang Dikemas',
-        catatan: 'Pesanan via Web Keranjang',
-        items: currentCartItems
-    };
-
-    // 2. Payload untuk menghapus item di sheet 'chart'
-    const payloadClearCart = {
-        action: 'clearCartAfterCheckout',
-        user: namaLogIn,
-        items: currentCartItems
-    };
-
-    try {
-        // Kirim data transaksi baru ke server
-        await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payloadTransaksi)
-        });
-
-        // Kirim perintah hapus keranjang ke server
-        await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify(payloadClearCart)
-        });
-
-        // Simpan data checkout sementara & bersihkan cache lokal
-        localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
-        localStorage.removeItem(cacheKey);
-
-        // Arahkan ke halaman transaksi/status pesanan
-        window.location.href = 'transaksi.html';
-
-    } catch (error) {
-        console.error("Gagal memproses checkout:", error);
-        alert("Terjadi kesalahan jaringan saat memproses transaksi.");
-        if (btnCheckout) {
-            btnCheckout.disabled = false;
-            btnCheckout.innerText = "Lanjutkan Pembayaran";
-        }
-    }
+    // 2. Arahkan pengguna ke halaman checkout tanpa melakukan POST transaksi prematur
+    window.location.href = 'checkout.html';
 }
 
 // --- FUNGSI NAVIGASI LANDING PAGE ---
