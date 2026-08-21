@@ -109,17 +109,29 @@ function prosesPembayaranAkhir() {
     const statusAwal = isTunai ? 'Sedang Dikemas' : 'Belum Bayar';
     const idTransaksi = 'TRX-' + Date.now();
 
-    const payload = {
-        action: "createTransaction",
-        user: namaLogIn,
-        id_user: idUser,
-        id_transaksi: idTransaksi,
-        total_bayar: totalBayar,
-        metode_pembayaran: metodePembayaran,
-        status: statusAwal,
-        catatan: catatan,
-        items: currentCartData
-    };
+   const payload = {
+    action: "createTransaction",
+    user: namaLogIn,
+    id_user: idUser,
+    id_transaksi: idTransaksi,
+    total_bayar: totalBayar,
+    metode_pembayaran: metodePembayaran,
+    status: statusAwal,
+    catatan: catatan,
+    items: currentCartData
+};
+
+console.log("========== DEBUG CHECKOUT ==========");
+console.log("Radio dipilih:", selectedRadio);
+console.log(
+    "Value radio:",
+    selectedRadio ? selectedRadio.value : "TIDAK ADA"
+);
+console.log("Metode pembayaran:", metodePembayaran);
+console.log("ID transaksi:", idTransaksi);
+console.log("Status:", statusAwal);
+console.log("Payload:", payload);
+console.log("====================================");
 
     // Kirim via Hidden Form ke Iframe untuk menghindari kendala CORS pada POST
     const iframeName = 'hidden_iframe_' + Date.now();
