@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan Akun</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app-container { width: 100%; max-width: 400px; background-color: #ffffff; min-height: 100vh; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 20px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+        .back-btn { text-decoration: none; color: #1a0f08; font-size: 20px; font-weight: bold; }
+        h1 { font-size: 20px; font-weight: 700; color: #1a0f08; }
+        
+        .profile-upload-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+        .preview-pic { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; background: #ddd; border: 3px solid #ff7b09; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px; }
+        .upload-label { font-size: 13px; color: #3498db; cursor: pointer; font-weight: 600; }
+        .upload-label input { display: none; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 12px; font-size: 14px; outline: none; background: #fafafa; }
+        .form-group input:focus { border-color: #ff7b09; background: #fff; }
+
+        .save-btn { width: 100%; background: #1a0f08; color: #fff; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+        .save-btn:hover { background: #333; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <a href="landing_page.html" class="back-btn">&#8592;</a>
+        <h1>Pengaturan Akun</h1>
+    </div>
+
+    <form id="accountForm" onsubmit="updateProfile(event)">
+        <div class="profile-upload-container">
+            <img id="profilePreview" src="https://via.placeholder.com/90" alt="Foto Profil" class="preview-pic">
+            <label class="upload-label">
+                Ubah Foto Profil
+                <input type="file" id="fotoInput" accept="image/*" onchange="previewImage(event)">
+            </label>
+        </div>
+
+        <div class="form-group">
+            <label>Nama Lengkap</label>
+            <input type="text" id="nama" required>
+        </div>
+
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="email" required>
+        </div>
+
+        <div class="form-group">
+            <label>Nomor HP / WhatsApp</label>
+            <input type="tel" id="no_hp" placeholder="Contoh: 08123456789">
+        </div>
+
+        <div class="form-group">
+            <label>Kata Sandi Baru (Opsional)</label>
+            <input type="password" id="password" placeholder="Kosongkan jika tidak diubah">
+        </div>
+
+        <button type="submit" class="save-btn" id="submitBtn">Simpan Perubahan</button>
+    </form>
+</div>
+
+<script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
+    let base64Image = "";
+    let fileNameImg = "";
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const idUser = localStorage.getItem('idUser');
+        if (!idUser) {
+            alert("Silakan login terlebih dahulu!");
+            window.location.replace('index.html');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${APPS_SCRIPT_URL}?action=getUserProfile&id_user=${idUser}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const user = result.data;
+                document.getElementById('nama').value = user.nama || "";
+                document.getElementById('email').value = user.email || "";
+                document.getElementById('no_hp').value = user.no_hp || "";
+                
+                if (user.foto) {
+                    document.getElementById('profilePreview').src = user.foto;
+                    localStorage.setItem('fotoUser', user.foto);
+                }
+            } else {
+                alert("Gagal memuat profil: " + result.message);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Terjadi kesalahan koneksi.");
+        }
+    });
+
+    function previewImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            fileNameImg = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                base64Image = e.target.result;
+                document.getElementById('profilePreview').src = base64Image;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    async function updateProfile(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "Menyimpan...";
+        btn.disabled = true;
+
+        const payload = {
+            action: "updateProfile",
+            id_user: localStorage.getItem('idUser'),
+            nama: document.getElementById('nama').value,
+            email: document.getElementById('email').value,
+            no_hp: document.getElementById('no_hp').value,
+            password: document.getElementById('password').value,
+            fotoBase64: base64Image,
+            fotoName: fileNameImg
+        };
+
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                alert("Profil berhasil diperbarui!");
+                localStorage.setItem('namaUser', payload.nama);
+                if (base64Image) {
+                    // Simpan cache foto sementara agar langsung sinkron
+                    localStorage.setItem('fotoUser', document.getElementById('profilePreview').src);
+                }
+                window.location.href = "landing_page.html";
+            } else {
+                alert("Gagal memperbarui: " + result.message);
+                btn.innerText = "Simpan Perubahan";
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Kesalahan jaringan.");
+            btn.innerText = "Simpan Perubahan";
+            btn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
