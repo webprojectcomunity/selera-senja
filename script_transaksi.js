@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // --- FUNGSI PROSES PEMBAYARAN AKHIR ---
 function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
-    const idUser = localStorage.getItem('idUser') || '';
+  const idUser = localStorage.getItem('idUser') || localStorage.getItem('userId') || '';
 
     // Tangkap radio button tercentang secara presisi
     const selectedRadio = document.querySelector('input[name="payment_method"]:checked');
