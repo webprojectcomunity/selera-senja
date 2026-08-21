@@ -1,5 +1,7 @@
 // --- KONFIGURASI ---
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec";
+const APPS_SCRIPT_URL_API = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
+
 let cachedData = []; // Untuk optimasi kecepatan
 let currentPage = 1;  // Halaman aktif saat ini
 const itemsPerPage = 10; // Batas maksimal 10 produk per halaman
@@ -15,7 +17,7 @@ function convertDriveUrl(url) {
     } catch (e) { return url; }
 }
 
-/************************************************
+/********************************----------------
  * FUNGSI SIDEBAR NAVIGATION
  ************************************************/
 function openSidebar() {
@@ -102,7 +104,7 @@ async function syncCartFromDatabase(username) {
   }
 }
 
-/************************************************
+/********************************----------------
  * FUNGSI POP-UP GAMBAR PRODUK
  ************************************************/
 function openImageModal(imgUrl, productName) {
@@ -124,7 +126,7 @@ function closeImageModal() {
     }
 }
 
-/************************************************
+/********************************----------------
  * FUNGSI UTAMA: Load Menu dengan LocalStorage Cache & Pagination
  ************************************************/
 async function loadMenu(searchQuery = '', page = 1) {
@@ -307,7 +309,7 @@ function logout() {
     }
 }
 
-/************************************************
+/********************************----------------
  * INISIALISASI HALAMAN & EVENT LISTENERS
  ************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
@@ -372,6 +374,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!namaLogIn) {
         window.location.replace('index.html');
         return;
+    }
+
+    // Pengecekan tambahan untuk memastikan data foto tersimpan di localStorage jika pengguna masuk secara reguler
+    const currentPhoto = localStorage.getItem('fotoUser');
+    if (!currentPhoto && localStorage.getItem('idUser')) {
+        try {
+            const profileRes = await fetch(`${APPS_SCRIPT_URL}?action=getUserProfile&id_user=${localStorage.getItem('idUser')}`);
+            const profileJson = await profileRes.json();
+            if (profileJson.success && profileJson.data && profileJson.data.foto) {
+                localStorage.setItem('fotoUser', profileJson.data.foto);
+                if (profilePicDiv) profilePicDiv.innerHTML = `<img src="${profileJson.data.foto}" alt="Foto Profil">`;
+            }
+        } catch (err) {
+            console.error("Gagal sinkronisasi profil:", err);
+        }
     }
 
     if (greetingElement) greetingElement.innerText = `Hallo ${namaLogIn} !`;
