@@ -89,29 +89,13 @@ function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
 
-    // --- PERBAIKAN UTAMA PENANGKAPAN METODE PEMBAYARAN ---
-    // Mencari radio button yang dipilih berdasarkan berbagai kemungkinan nama atribut HTML
-    let metodePembayaran = "Tunai"; // Default fallback
+    // --- TANGKAP LANGSUNG DARI NAME="payment_method" ---
+    const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
     
-    const checkedRadio = document.querySelector('input[type="radio"]:checked');
-    if (checkedRadio) {
-        // Ambil dari value radio, atau jika value kosong ambil dari teks label di dekatnya
-        metodePembayaran = checkedRadio.value || checkedRadio.getAttribute('id') || 'Tunai';
-    } else {
-        // Jika menggunakan elemen select/dropdown
-        const selectElem = document.getElementById('metode-pembayaran') || document.getElementById('payment_method');
-        if (selectElem) {
-            metodePembayaran = selectElem.value;
-        }
-    }
-
-    // Normalisasi teks agar konsisten (misal: "tunai" jadi "Tunai", "qris" jadi "QRIS")
-    if (metodePembayaran.toLowerCase().includes('tunai') || metodePembayaran.toLowerCase().includes('cash')) {
-        metodePembayaran = 'Tunai';
-    } else if (metodePembayaran.toLowerCase().includes('qris')) {
-        metodePembayaran = 'QRIS';
-    } else if (metodePembayaran.toLowerCase().includes('transfer') || metodePembayaran.toLowerCase().includes('tf')) {
-        metodePembayaran = 'Transfer';
+    // Tentukan nilai secara pasti
+    let metodePembayaran = 'Tunai'; // Default aman
+    if (selectedPayment) {
+        metodePembayaran = selectedPayment.value; // Ini akan bernilai 'Tunai' atau 'QRIS' sesuai yang dipilih user
     }
 
     // --- DEBUGGING: Cek hasil tangkapan di Console Browser (Tekan F12) ---
@@ -129,8 +113,8 @@ function prosesPembayaranAkhir() {
         btnSubmit.innerText = "Memproses Pesanan...";
     }
 
-    // Tentukan status awal berdasarkan metode pembayaran yang benar-benar terpilih
-    const statusAwal = (metodePembayaran.toUpperCase() === 'TUNAI') ? 'Sedang Dikemas' : 'Belum Bayar';
+    // Tentukan status awal berdasarkan metode pembayaran (Case-sensitive aman)
+    const statusAwal = (metodePembayaran.toLowerCase() === 'tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
     const idTransaksi = 'TRX-' + Date.now();
 
     const payload = {
