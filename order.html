@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Keranjang & Status Pesanan - Sistem Transaksi</title>
+    <title>Riwayat & Status Pesanan</title>
     <style>
         * {
             box-sizing: border-box;
@@ -25,27 +25,10 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             margin-bottom: 20px;
         }
-        h2, h3 {
+        h2 {
             text-align: center;
             margin-bottom: 15px;
             color: #2c3e50;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #555;
-        }
-        .form-control {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
         }
         .order-card {
             background: #fafafa;
@@ -53,6 +36,11 @@
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        .order-card.highlight {
+            border: 2px solid #27ae60;
+            background-color: #f0fff4;
         }
         .order-header {
             display: flex;
@@ -90,23 +78,6 @@
             font-size: 12px;
             color: #666;
         }
-        .btn-checkout {
-            display: block;
-            width: 100%;
-            padding: 12px;
-            background: #27ae60;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            text-align: center;
-            font-size: 15px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-checkout:hover {
-            background: #219653;
-        }
         .nav-btn {
             display: block;
             width: 100%;
@@ -128,8 +99,6 @@
 </head>
 <body>
 
-   
-    <!-- BAGIAN RIWAYAT & STATUS PESANAN -->
     <div class="container">
         <h2>Riwayat & Status Pesanan</h2>
         
@@ -150,84 +119,17 @@
                 window.location.replace('index.html');
                 return;
             }
-
             loadUserOrders();
         });
-
-        // --- FUNGSI PROSES CHECKOUT (DINAMIS MENANGKAP INPUT USER) ---
-        async function prosesCheckout() {
-            // 1. Ambil elemen pilihan metode pembayaran dari form
-            const selectMetode = document.getElementById('metodePembayaran');
-            const pilihanMetode = selectMetode ? selectMetode.value : 'Tunai';
-
-            // Ambil data keranjang aktif dari localStorage (atau sesuaikan dengan sumber data keranjang Anda)
-            const keranjangDataAktif = JSON.parse(localStorage.getItem('user_cart') || '[]');
-            
-            // Hitung total bayar secara otomatis dari item keranjang
-            let totalHarga = 0;
-            keranjangDataAktif.forEach(item => {
-                const subtotal = item.total_harga || ((item.harga_satuan || item.harga || 0) * (item.jumlah || 1));
-                totalHarga += parseFloat(subtotal) || 0;
-            });
-
-            if (keranjangDataAktif.length === 0) {
-                alert("Keranjang belanja Anda masih kosong!");
-                return;
-            }
-
-            // 2. Susun payload yang akan dikirim ke Google Apps Script (doPost)
-            const payload = {
-                action: 'createTransaction',
-                id_transaksi: 'TRX-' + Date.now(),
-                id_user: localStorage.getItem('idUser') || '',
-                user: namaLogIn,
-                total_bayar: totalHarga,
-                metode_pembayaran: pilihanMetode,   // <--- Nilai dinamis dari pilihan <select>
-                status: (pilihanMetode.toLowerCase() === 'tunai') ? 'Sedang Dikemas' : 'Belum Bayar',
-                catatan: document.getElementById('catatanCheckout') ? document.getElementById('catatanCheckout').value : '',
-                items: keranjangDataAktif
-            };
-
-            console.log("Payload yang dikirim ke Server:", payload);
-
-            try {
-                // Tampilkan indikator loading sederhana jika diperlukan
-                const btn = document.querySelector('.btn-checkout');
-                btn.disabled = true;
-                btn.innerText = 'Menyimpan Pesanan...';
-
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert("Pesanan berhasil dibuat!");
-                    localStorage.removeItem('user_cart'); // Bersihkan keranjang lokal setelah sukses
-                    loadUserOrders(); // Muat ulang daftar pesanan
-                    
-                    // Reset form
-                    document.getElementById('catatanCheckout').value = '';
-                    document.getElementById('metodePembayaran').selectedIndex = 0;
-                } else {
-                    alert("Gagal: " + result.message);
-                }
-
-                btn.disabled = false;
-                btn.innerText = 'Proses & Buat Pesanan';
-            } catch (error) {
-                console.error("Error checkout:", error);
-                alert("Terjadi kesalahan jaringan saat memproses pesanan.");
-                document.querySelector('.btn-checkout').disabled = false;
-                document.querySelector('.btn-checkout').innerText = 'Proses & Buat Pesanan';
-            }
-        }
 
         // --- FUNGSI MEMUAT RIWAYAT PESANAN ---
         async function loadUserOrders() {
             const container = document.getElementById('order-container');
-            container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan...</p>`;
+            container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan dari server...</p>`;
+
+            // Ambil ID Transaksi dari parameter URL (jika baru selesai checkout)
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTrxId = urlParams.get('trx') || localStorage.getItem('last_transaction_id') || '';
 
             try {
                 const url = `${APPS_SCRIPT_URL}?action=getTransactions&user=${encodeURIComponent(namaLogIn.trim())}`;
@@ -244,17 +146,17 @@
                 }
 
                 if (ordersArray.length > 0) {
-                    renderOrders(ordersArray);
+                    renderOrders(ordersArray, activeTrxId);
                     localStorage.setItem('user_orders', JSON.stringify(ordersArray));
                 } else {
-                    renderOrders([]);
+                    renderOrders([], activeTrxId);
                 }
 
             } catch (error) {
                 console.error("Gagal sinkronisasi pesanan dari server:", error);
                 let localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
                 if (localOrders.length > 0) {
-                    renderOrders(localOrders);
+                    renderOrders(localOrders, activeTrxId);
                 } else {
                     container.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data pesanan dari server.</p>`;
                 }
@@ -262,7 +164,7 @@
         }
 
         // --- FUNGSI RENDER TAMPILAN PESANAN KE HTML ---
-        function renderOrders(orders) {
+        function renderOrders(orders, activeTrxId) {
             const container = document.getElementById('order-container');
             if (!orders || orders.length === 0) {
                 container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Belum ada pesanan yang dibuat.</p>`;
@@ -272,6 +174,7 @@
             container.innerHTML = '';
             orders.forEach(order => {
                 const statusClass = (order.status || '').toLowerCase().replace(/\s+/g, '-');
+                const isCurrentTrx = activeTrxId && String(order.id_transaksi).trim() === String(activeTrxId).trim();
                 
                 let itemsArray = [];
                 if (Array.isArray(order.items)) {
@@ -290,14 +193,14 @@
                     itemsArray.forEach(item => {
                         const nama = item.nama_produk || item.nama || 'Produk';
                         const qty = item.jumlah || item.qty || 1;
-                        const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : ((item.harga_satuan || item.harga || 0) * qty);
+                        const subtotal = item.subtotal || item.total_harga || ((item.harga_satuan || item.harga || 0) * qty);
                         itemsHtml += `<li>${nama} (${qty}x) - Rp ${Number(subtotal || 0).toLocaleString('id-ID')}</li>`;
                     });
                     itemsHtml += '</ul>';
                 }
 
                 const card = document.createElement('div');
-                card.className = 'order-card';
+                card.className = `order-card ${isCurrentTrx ? 'highlight' : ''}`;
                 card.innerHTML = `
                     <div class="order-header">
                         <span class="order-id">${order.id_transaksi || 'TRX-XXXX'}</span>
