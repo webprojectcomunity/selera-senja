@@ -89,8 +89,23 @@ function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
 
-    const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
-    const metodePembayaran = selectedPayment ? selectedPayment.value : 'Tunai';
+    // Tangkap pilihan metode pembayaran secara akurat dari berbagai kemungkinan atribut HTML
+    const selectedPayment = document.querySelector('input[name="payment_method"]:checked') || 
+                            document.querySelector('input[name="metode"]:checked') || 
+                            document.querySelector('input[name="pembayaran"]:checked') ||
+                            document.querySelector('input[type="radio"]:checked');
+                            
+    const selectPaymentElem = document.getElementById('metode-pembayaran') || document.getElementById('payment_method');
+    
+    let metodePembayaran = 'Tunai'; // Default aman
+    if (selectedPayment) {
+        metodePembayaran = selectedPayment.value;
+    } else if (selectPaymentElem) {
+        metodePembayaran = selectPaymentElem.value;
+    }
+
+    // --- DEBUGGING: Cek hasil tangkapan di Console Browser (F12) ---
+    console.log("METODE PEMBAYARAN TERPILIH:", metodePembayaran);
 
     const catatanElem = document.getElementById('catatan-transaksi');
     const catatan = catatanElem ? catatanElem.value.trim() : '';
@@ -104,6 +119,7 @@ function prosesPembayaranAkhir() {
         btnSubmit.innerText = "Memproses Pesanan...";
     }
 
+    // Tentukan status awal berdasarkan metode pembayaran
     const statusAwal = (metodePembayaran.toLowerCase() === 'tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
     const idTransaksi = 'TRX-' + Date.now();
 
@@ -136,11 +152,10 @@ function prosesPembayaranAkhir() {
 
     const inputPayload = document.createElement('input');
     inputPayload.type = 'hidden';
-    inputPayload.name = 'payload'; // Menyesuaikan dengan penangkapan di Code.gs jika diperlukan
+    inputPayload.name = 'payload';
     inputPayload.value = JSON.stringify(payload);
     form.appendChild(inputPayload);
 
-    // Kirim juga aksi terpisah untuk membersihkan keranjang secara paralel
     const clearPayload = {
         action: "clearCartAfterCheckout",
         user: namaLogIn,
@@ -156,7 +171,7 @@ function prosesPembayaranAkhir() {
     document.body.appendChild(form);
     form.submit();
 
-    // Bersihkan localStorage lokal secara instan
+    // Bersihkan localStorage lokal
     localStorage.removeItem('cart');
     localStorage.removeItem('keranjang');
     localStorage.removeItem('cartItems');
@@ -167,9 +182,9 @@ function prosesPembayaranAkhir() {
 
     localStorage.setItem('last_transaction_id', idTransaksi);
 
-    // Berikan jeda sejenak agar form sempat terkirim ke server, lalu pindah halaman
+    // Berikan jeda sejenak lalu pindah halaman sesuai metode pembayaran
     setTimeout(() => {
-        if (metodePembayaran === 'QRIS') {
+        if (metodePembayaran.toUpperCase() === 'QRIS') {
             const qrisData = {
                 id_transaksi: idTransaksi,
                 total_bayar: totalBayar,
