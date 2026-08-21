@@ -87,14 +87,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- EKSEKUSI KIRIM TRANSAKSI KE GOOGLE APPS SCRIPT (MENGGUNAKAN HIDDEN FORM) ---
-// --- EKSEKUSI KIRIM TRANSAKSI KE GOOGLE APPS SCRIPT (MENGGUNAKAN HIDDEN FORM) ---
 async function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
-    
+
     const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
     const metodePembayaran = selectedPayment ? selectedPayment.value : 'Tunai';
-    
+
     const catatanElem = document.getElementById('catatan-transaksi');
     const catatan = catatanElem ? catatanElem.value.trim() : '';
 
@@ -123,6 +122,15 @@ async function prosesPembayaranAkhir() {
         items: currentCartData
     };
 
+    // --- DEBUG CHECKOUT ---
+    console.log("========== DEBUG CHECKOUT ==========");
+    console.log("Radio dipilih:", selectedPayment);
+    console.log("Value radio:", selectedPayment ? selectedPayment.value : "TIDAK ADA");
+    console.log("Metode pembayaran:", metodePembayaran);
+    console.log("ID transaksi:", idTransaksi);
+    console.log("Payload:", payload);
+    console.log("====================================");
+
     // Fungsi pembantu untuk membersihkan keranjang lokal
     function bersihkanKeranjangLokal() {
         localStorage.removeItem('cart');
@@ -136,21 +144,24 @@ async function prosesPembayaranAkhir() {
         if (window.updateCartBadge) window.updateCartBadge();
     }
 
-    // Fungsi pembantu untuk melakukan navigasi halaman
+    // Fungsi pembantu untuk melakukan navigasi halaman (VERSI BARU)
     function arahkanHalaman() {
+        // Simpan transaksi terakhir
+        localStorage.setItem('last_transaction_id', idTransaksi);
+        
         if (metodePembayaran === 'QRIS') {
             const qrisData = {
                 id_transaksi: idTransaksi,
                 total_bayar: totalBayar,
                 nama_user: namaLogIn,
-                qr_code_url: '' 
+                qr_code_url: ''
             };
             localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
             alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
-            window.location.replace('qris_payment.html'); 
+            window.location.replace('qris_payment.html');
         } else {
             alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
-            window.location.replace('order.html'); 
+            window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
         }
     }
 
@@ -178,7 +189,6 @@ async function prosesPembayaranAkhir() {
             form.innerHTML = '';
         }
 
-        // Masukkan data payload sebagai input form
         const inputPayload = document.createElement('input');
         inputPayload.type = 'hidden';
         inputPayload.name = 'payload';
@@ -188,7 +198,6 @@ async function prosesPembayaranAkhir() {
         // --- 3. SUBMIT FORM KE GOOGLE APPS SCRIPT ---
         form.submit();
 
-        // Kirim perintah susulan untuk membersihkan cart di database Google Sheets lewat iframe
         setTimeout(() => {
             form.innerHTML = '';
             const clearPayload = document.createElement('input');
