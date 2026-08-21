@@ -146,24 +146,11 @@
                 }
 
                 if (ordersArray.length > 0) {
-                    // Jika ada ID transaksi dari halaman checkout,
-                    // tampilkan transaksi tersebut saja
-                    if (transaksiTerakhir) {
-                        const transaksiFiltered = ordersArray.filter(order =>
-                            String(order.id_transaksi || '').trim() === String(transaksiTerakhir).trim()
-                        );
+                    // Balikkan urutan agar transaksi paling baru berada di paling atas
+                    ordersArray.reverse();
 
-                        console.log("ID transaksi yang dicari:", transaksiTerakhir);
-                        console.log("Transaksi ditemukan:", transaksiFiltered);
-
-                        if (transaksiFiltered.length > 0) {
-                            renderOrders(transaksiFiltered, transaksiTerakhir);
-                        } else {
-                            renderOrders(ordersArray, transaksiTerakhir);
-                        }
-                    } else {
-                        renderOrders(ordersArray, transaksiTerakhir);
-                    }
+                    // Tampilkan SEMUA transaksi, gunakan transaksiTerakhir hanya untuk memberi garis hijau (highlight)
+                    renderOrders(ordersArray, transaksiTerakhir);
 
                     localStorage.setItem('user_orders', JSON.stringify(ordersArray));
                 } else {
@@ -174,14 +161,7 @@
                 console.error("Gagal sinkronisasi pesanan dari server:", error);
                 let localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
                 if (localOrders.length > 0) {
-                    if (transaksiTerakhir) {
-                        const localFiltered = localOrders.filter(order =>
-                            String(order.id_transaksi || '').trim() === String(transaksiTerakhir).trim()
-                        );
-                        renderOrders(localFiltered.length > 0 ? localFiltered : localOrders, transaksiTerakhir);
-                    } else {
-                        renderOrders(localOrders, transaksiTerakhir);
-                    }
+                    renderOrders(localOrders, transaksiTerakhir);
                 } else {
                     container.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data pesanan dari server.</p>`;
                 }
