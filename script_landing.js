@@ -58,7 +58,7 @@ function updateCartBadge() {
       }
     }
   }
-          
+        
   let cartData = [];
   try {
     cartData = rawCart ? JSON.parse(rawCart) : [];
@@ -302,6 +302,7 @@ function logout() {
     if (confirm('Keluar dari aplikasi?')) {
         localStorage.removeItem('namaUser');
         localStorage.removeItem('idUser');
+        localStorage.removeItem('fotoUser');
         window.location.replace('index.html');
     }
 }
@@ -311,6 +312,13 @@ function logout() {
  ************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
     updateCartBadge();
+
+    // Memuat foto profil dari localStorage jika ada
+    const savedFoto = localStorage.getItem('fotoUser');
+    const profilePicDiv = document.querySelector('.profile-pic');
+    if (profilePicDiv && savedFoto) {
+        profilePicDiv.innerHTML = `<img src="${savedFoto}" alt="Foto Profil">`;
+    }
 
     const greetingElement = document.getElementById('user-greeting');
     
@@ -333,6 +341,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (data.success) {
                 localStorage.setItem('namaUser', data.user.nama);
                 localStorage.setItem('idUser', data.user.id_user);
+                if (data.user.foto) {
+                    localStorage.setItem('fotoUser', data.user.foto);
+                    if (profilePicDiv) profilePicDiv.innerHTML = `<img src="${data.user.foto}" alt="Foto Profil">`;
+                }
                 
                 if (greetingElement) greetingElement.innerText = `Hallo ${data.user.nama} !`;
                 
