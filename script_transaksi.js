@@ -10,7 +10,7 @@ function formatRupiah(number) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Coba ambil data dari localStorage
+    // 1. Ambil data keranjang dari localStorage
     const specificCacheKey = namaLogIn ? `cart_cache_${namaLogIn.trim()}` : '';
     const rawCartData = 
         localStorage.getItem('checkout_items') || 
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 3. Validasi Akhir
+    // 3. Validasi
     if (!currentCartData || currentCartData.length === 0) {
         alert("Tidak ada data produk yang akan di-checkout atau keranjang kosong.");
         window.location.replace('chart.html');
@@ -84,23 +84,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- FUNGSI PROSES PEMBAYARAN MENGGUNAKAN HIDDEN FORM (BYPASS CORS) ---
+// --- FUNGSI PROSES PEMBAYARAN ---
 function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
 
-    // 1. Tangkap radio button tercentang secara akurat
-    const radioElements = document.getElementsByName('payment_method');
-    let metodePembayaran = 'Tunai'; // Default Fallback
-
-    for (const radio of radioElements) {
-        if (radio.checked) {
-            metodePembayaran = radio.value;
-            break;
-        }
-    }
-
-    console.log("METODE PEMBAYARAN TERPILIH:", metodePembayaran);
+    // Tangkap radio button tercentang secara presisi
+    const selectedRadio = document.querySelector('input[name="payment_method"]:checked');
+    const metodePembayaran = selectedRadio ? selectedRadio.value : 'Tunai';
 
     const catatanElem = document.getElementById('catatan-transaksi');
     const catatan = catatanElem ? catatanElem.value.trim() : '';
@@ -114,7 +105,6 @@ function prosesPembayaranAkhir() {
         btnSubmit.innerText = "Memproses Pesanan...";
     }
 
-    // Tentukan status awal berdasarkan metode pembayaran
     const isTunai = metodePembayaran.toLowerCase() === 'tunai';
     const statusAwal = isTunai ? 'Sedang Dikemas' : 'Belum Bayar';
     const idTransaksi = 'TRX-' + Date.now();
@@ -131,12 +121,13 @@ function prosesPembayaranAkhir() {
         items: currentCartData
     };
 
-    // 2. Buat iframe & form tersembunyi untuk bypass CORS
+    // Kirim via Hidden Form ke Iframe
     const iframeName = 'hidden_iframe_' + Date.now();
     let iframe = document.getElementById(iframeName);
     if (!iframe) {
         iframe = document.createElement('iframe');
         iframe.name = iframeName;
+        iframe.style.id = iframeName;
         iframe.style.display = 'none';
         document.body.appendChild(iframe);
     }
@@ -155,7 +146,7 @@ function prosesPembayaranAkhir() {
     document.body.appendChild(form);
     form.submit();
 
-    // 3. Bersihkan localStorage lokal
+    // Bersihkan LocalStorage
     localStorage.removeItem('cart');
     localStorage.removeItem('keranjang');
     localStorage.removeItem('cartItems');
@@ -166,10 +157,9 @@ function prosesPembayaranAkhir() {
 
     localStorage.setItem('last_transaction_id', idTransaksi);
 
-    // 4. Pengalihan Halaman
+    // Pengalihan Halaman (diberi jeda 2.5 detik agar Google Sheets selesai memproses)
     setTimeout(() => {
         if (!isTunai) {
-            // Jika QRIS
             const qrisData = {
                 id_transaksi: idTransaksi,
                 total_bayar: totalBayar,
@@ -180,9 +170,8 @@ function prosesPembayaranAkhir() {
             alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
             window.location.replace('qris_payment.html');
         } else {
-            // Jika Tunai
             alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
             window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
         }
-    }, 1500);
+    }, 2500);
 }
