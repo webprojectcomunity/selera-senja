@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- FUNGSI PROSES PEMBAYARAN ---
+// --- FUNGSI PROSES PEMBAYARAN AKHIR ---
 function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
@@ -121,7 +121,7 @@ function prosesPembayaranAkhir() {
         items: currentCartData
     };
 
-    // Kirim via Hidden Form ke Iframe
+    // Kirim via Hidden Form ke Iframe untuk menghindari kendala CORS pada POST
     const iframeName = 'hidden_iframe_' + Date.now();
     let iframe = document.getElementById(iframeName);
     if (!iframe) {
@@ -157,7 +157,7 @@ function prosesPembayaranAkhir() {
 
     localStorage.setItem('last_transaction_id', idTransaksi);
 
-    // Pengalihan Halaman (diberi jeda 2.5 detik agar Google Sheets selesai memproses)
+    // Pengalihan Halaman (memberi jeda agar Spreadsheet selesai memproses)
     setTimeout(() => {
         if (!isTunai) {
             const qrisData = {
