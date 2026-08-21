@@ -118,50 +118,34 @@
         });
 
         async function loadUserOrders() {
-            const container = document.getElementById('order-container');
+    const container = document.getElementById('order-container');
+    container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan...</p>`;
 
-            // 1. Ambil dari LocalStorage terlebih dahulu untuk respons instan
-            let localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
+    try {
+        // Langsung tarik data terbaru dari server Google Apps Script
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=getTransactions&user=${encodeURIComponent(namaLogIn.trim())}`);
+        const result = await response.json();
 
-            if (localOrders.length > 0) {
-                renderOrders(localOrders);
-            } else {
-                container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan...</p>`;
-            }
-
-            // 2. Tarik data terbaru dari Google Apps Script (Sheet Transaksi) di latar belakang
-            try {
-                const response = await fetch(`${APPS_SCRIPT_URL}?action=getTransactions&user=${encodeURIComponent(namaLogIn.trim())}`);
-                const result = await response.json();
-
-                if (result && result.success && Array.isArray(result.data)) {
-                    if (result.data.length > 0) {
-                        // Gabungkan data server dengan localOrders (cegah duplikasi id_transaksi)
-                        const combinedOrders = [...result.data];
-                        localOrders.forEach(localItem => {
-                            const exists = combinedOrders.some(serverItem => 
-                                (serverItem.id_transaksi && localItem.id_transaksi && serverItem.id_transaksi === localItem.id_transaksi)
-                            );
-                            if (!exists) {
-                                combinedOrders.push(localItem);
-                            }
-                        });
-                        renderOrders(combinedOrders);
-                    } else if (localOrders.length > 0) {
-                        // Server mengembalikan array kosong [], tetapi localOrders memiliki data -> TETAP tampilkan localOrders
-                        renderOrders(localOrders);
-                    } else {
-                        renderOrders([]);
-                    }
-                }
-            } catch (error) {
-                console.error("Gagal sinkronisasi pesanan dari server:", error);
-                if (localOrders.length === 0) {
-                    container.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data pesanan.</p>`;
-                }
-            }
+        if (result && result.success && Array.isArray(result.data)) {
+            renderOrders(result.data);
+            
+            // Perbarui cache lokal dengan data bersih dari server
+            localStorage.setItem('user_orders', JSON.stringify(result.data));
+        } else {
+            renderOrders([]);
         }
-
+    } catch (error) {
+        console.error("Gagal sinkronisasi pesanan dari server:", error);
+        
+        // Fallback ke local storage jika offline/gagal koneksi
+        let localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
+        if (localOrders.length > 0) {
+            renderOrders(localOrders);
+        } else {
+            container.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data pesanan dari server.</p>`;
+        }
+    }
+}
         function renderOrders(orders) {
             const container = document.getElementById('order-container');
             if (!orders || orders.length === 0) {
