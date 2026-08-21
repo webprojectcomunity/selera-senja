@@ -84,8 +84,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- FUNGSI PROSES PEMBAYARAN ---
-async function prosesPembayaranAkhir() {
+// --- FUNGSI PROSES PEMBAYARAN MENGGUNAKAN HIDDEN FORM (BYPASS CORS) ---
+function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
 
@@ -119,57 +119,69 @@ async function prosesPembayaranAkhir() {
         items: currentCartData
     };
 
-    try {
-        // 1. Kirim Transaksi (POST)
-        const responseTrx = await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(payload)
-        });
-        const resultTrx = await responseTrx.json();
+    // --- BUAT IFRAME & FORM TERSEMBUNYI UNTUK MENGIRIM DATA TANPA CORS ---
+    const iframeName = 'hidden_iframe_' + Date.now();
+    let iframe = document.getElementById(iframeName);
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.name = iframeName;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
 
-        if (!resultTrx.success) {
-            throw new Error(resultTrx.message || "Gagal menyimpan transaksi.");
-        }
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = APPS_SCRIPT_URL;
+    form.target = iframeName;
 
-        // 2. Bersihkan Keranjang di Server
-        const clearPayload = {
-            action: "clearCartAfterCheckout",
-            user: namaLogIn,
-            items: currentCartData
-        };
-        await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(clearPayload)
-        });
+    const inputPayload = document.createElement('input');
+    inputPayload.type = 'hidden';
+    inputPayload.name = 'payload'; // Menyesuaikan dengan penangkapan di Code.gs jika diperlukan
+    inputPayload.value = JSON.stringify(payload);
+    form.appendChild(inputPayload);
 
-        // 3. Bersihkan Lokal Storage
-        localStorage.removeItem('cart');
-        localStorage.removeItem('keranjang');
-        localStorage.removeItem('cartItems');
-        localStorage.removeItem('spg_cart');
-        localStorage.removeItem('checkout_items');
-        if (namaLogIn) localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
-        if (window.updateCartBadge) window.updateCartBadge();
+    // Kirim juga aksi terpisah untuk membersihkan keranjang secara paralel
+    const clearPayload = {
+        action: "clearCartAfterCheckout",
+        user: namaLogIn,
+        items: currentCartData
+    };
 
-        // 4. Navigasi
-        localStorage.setItem('last_transaction_id', idTransaksi);
+    const inputClear = document.createElement('input');
+    inputClear.type = 'hidden';
+    inputClear.name = 'clear_payload';
+    inputClear.value = JSON.stringify(clearPayload);
+    form.appendChild(inputClear);
+
+    document.body.appendChild(form);
+    form.submit();
+
+    // Bersihkan localStorage lokal secara instan
+    localStorage.removeItem('cart');
+    localStorage.removeItem('keranjang');
+    localStorage.removeItem('cartItems');
+    localStorage.removeItem('spg_cart');
+    localStorage.removeItem('checkout_items');
+    if (namaLogIn) localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
+    if (window.updateCartBadge) window.updateCartBadge();
+
+    localStorage.setItem('last_transaction_id', idTransaksi);
+
+    // Berikan jeda sejenak agar form sempat terkirim ke server, lalu pindah halaman
+    setTimeout(() => {
         if (metodePembayaran === 'QRIS') {
-            localStorage.setItem('active_qris_trx', JSON.stringify({ id_transaksi: idTransaksi, total_bayar: totalBayar, nama_user: namaLogIn }));
-            alert("Pesanan dibuat. Selesaikan pembayaran QRIS.");
+            const qrisData = {
+                id_transaksi: idTransaksi,
+                total_bayar: totalBayar,
+                nama_user: namaLogIn,
+                qr_code_url: ''
+            };
+            localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
+            alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
             window.location.replace('qris_payment.html');
         } else {
-            alert("Pesanan berhasil dibuat! Status: Sedang Dikemas.");
+            alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
             window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
         }
-
-    } catch (error) {
-        console.error("Error Proses Pembayaran:", error);
-        alert("Terjadi kesalahan saat memproses transaksi: " + error.message);
-        if (btnSubmit) {
-            btnSubmit.disabled = false;
-            btnSubmit.innerText = "Konfirmasi & Bayar Sekarang";
-        }
-    }
+    }, 1500);
 }
