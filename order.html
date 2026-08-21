@@ -117,27 +117,39 @@
             loadUserOrders();
         });
 
-        async function loadUserOrders() {
+     async function loadUserOrders() {
     const container = document.getElementById('order-container');
     container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan...</p>`;
 
     try {
-        // Langsung tarik data terbaru dari server Google Apps Script
-        const response = await fetch(`${APPS_SCRIPT_URL}?action=getTransactions&user=${encodeURIComponent(namaLogIn.trim())}`);
-        const result = await response.json();
+        const url = `${APPS_SCRIPT_URL}?action=getTransactions&user=${encodeURIComponent(namaLogIn.trim())}`;
+        console.log("Memanggil URL Transaksi:", url);
 
-        if (result && result.success && Array.isArray(result.data)) {
-            renderOrders(result.data);
-            
-            // Perbarui cache lokal dengan data bersih dari server
-            localStorage.setItem('user_orders', JSON.stringify(result.data));
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        console.log("Response dari Server Transaksi:", result);
+
+        // Fleksibel mengecek apakah result berupa array langsung atau objek {success, data}
+        let ordersArray = [];
+        if (Array.isArray(result)) {
+            ordersArray = result;
+        } else if (result && result.success && Array.isArray(result.data)) {
+            ordersArray = result.data;
+        } else if (result && Array.isArray(result.data)) {
+            ordersArray = result.data;
+        }
+
+        if (ordersArray.length > 0) {
+            renderOrders(ordersArray);
+            localStorage.setItem('user_orders', JSON.stringify(ordersArray));
         } else {
             renderOrders([]);
         }
+
     } catch (error) {
         console.error("Gagal sinkronisasi pesanan dari server:", error);
         
-        // Fallback ke local storage jika offline/gagal koneksi
         let localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
         if (localOrders.length > 0) {
             renderOrders(localOrders);
