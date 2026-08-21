@@ -10,7 +10,7 @@ function formatRupiah(number) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Coba ambil data dari localStorage terlebih dahulu (prioritas utama dari tombol checkout)
+    // 1. Coba ambil data dari localStorage
     const specificCacheKey = namaLogIn ? `cart_cache_${namaLogIn.trim()}` : '';
     const rawCartData = 
         localStorage.getItem('checkout_items') || 
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentCartData = [];
     }
 
-    // 2. Jika data lokal kosong, tarik langsung dari Server Google Apps Script menggunakan action=getCart
+    // 2. Jika lokal kosong, tarik dari Server Google Apps Script
     if ((!currentCartData || currentCartData.length === 0) && namaLogIn) {
         const summaryContainer = document.getElementById('summary-items-container');
         if (summaryContainer) {
@@ -38,7 +38,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const result = await response.json();
             if (result && result.success && Array.isArray(result.data)) {
                 currentCartData = result.data;
-                // Simpan kembali ke checkout_items agar valid
                 localStorage.setItem('checkout_items', JSON.stringify(currentCartData));
             }
         } catch (err) {
@@ -46,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 3. Validasi Akhir: Jika tetap kosong, kembalikan pengguna ke halaman chart.html
+    // 3. Validasi Akhir
     if (!currentCartData || currentCartData.length === 0) {
         alert("Tidak ada data produk yang akan di-checkout atau keranjang kosong.");
         window.location.replace('chart.html');
@@ -60,13 +59,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         totalBayar += parseFloat(hargaRaw) || 0;
     });
 
-    // 5. Tampilkan total bayar ke UI
     const totalBayarElem = document.getElementById('element-total-bayar');
     if (totalBayarElem) {
         totalBayarElem.innerText = formatRupiah(totalBayar);
     }
 
-    // 6. Render ringkasan item ke dalam kontainer transaksi.html
+    // 5. Render ringkasan item
     const summaryContainer = document.getElementById('summary-items-container');
     if (summaryContainer) {
         summaryContainer.innerHTML = '';
@@ -86,8 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- EKSEKUSI KIRIM TRANSAKSI KE GOOGLE APPS SCRIPT (MENGGUNAKAN HIDDEN FORM) ---
-// --- EKSEKUSI KIRIM TRANSAKSI KE GOOGLE APPS SCRIPT (MENGGUNAKAN FETCH BERURUTAN) ---
+// --- FUNGSI PROSES PEMBAYARAN ---
 async function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
@@ -122,65 +119,48 @@ async function prosesPembayaranAkhir() {
         items: currentCartData
     };
 
-    // --- DEBUG CHECKOUT ---
-    console.log("========== DEBUG CHECKOUT ==========");
-    console.log("Radio dipilih:", selectedPayment);
-    console.log("Value radio:", selectedPayment ? selectedPayment.value : "TIDAK ADA");
-    console.log("Metode pembayaran:", metodePembayaran);
-    console.log("ID transaksi:", idTransaksi);
-    console.log("Payload:", payload);
-    console.log("====================================");
-
     try {
-        // 1. Kirim transaksi ke Google Apps Script dan TUNGGU hingga selesai
+        // 1. Kirim Transaksi (POST)
         const responseTrx = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         });
         const resultTrx = await responseTrx.json();
 
         if (!resultTrx.success) {
-            throw new Error(resultTrx.message || "Gagal menyimpan transaksi di server.");
+            throw new Error(resultTrx.message || "Gagal menyimpan transaksi.");
         }
 
-        // 2. Kirim perintah pembersihan keranjang server (clearCartAfterCheckout)
+        // 2. Bersihkan Keranjang di Server
         const clearPayload = {
             action: "clearCartAfterCheckout",
             user: namaLogIn,
             items: currentCartData
         };
-
         await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(clearPayload)
         });
 
-        // 3. Bersihkan keranjang lokal
+        // 3. Bersihkan Lokal Storage
         localStorage.removeItem('cart');
         localStorage.removeItem('keranjang');
         localStorage.removeItem('cartItems');
         localStorage.removeItem('spg_cart');
         localStorage.removeItem('checkout_items');
-        if (namaLogIn) {
-            localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
-        }
+        if (namaLogIn) localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
         if (window.updateCartBadge) window.updateCartBadge();
 
-        // 4. Simpan transaksi terakhir & navigasi halaman
+        // 4. Navigasi
         localStorage.setItem('last_transaction_id', idTransaksi);
-        
         if (metodePembayaran === 'QRIS') {
-            const qrisData = {
-                id_transaksi: idTransaksi,
-                total_bayar: totalBayar,
-                nama_user: namaLogIn,
-                qr_code_url: ''
-            };
-            localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
-            alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
+            localStorage.setItem('active_qris_trx', JSON.stringify({ id_transaksi: idTransaksi, total_bayar: totalBayar, nama_user: namaLogIn }));
+            alert("Pesanan dibuat. Selesaikan pembayaran QRIS.");
             window.location.replace('qris_payment.html');
         } else {
-            alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
+            alert("Pesanan berhasil dibuat! Status: Sedang Dikemas.");
             window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
         }
 
