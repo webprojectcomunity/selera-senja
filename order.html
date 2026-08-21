@@ -113,6 +113,10 @@
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
         const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
 
+        // Tangkap parameter URL dan localStorage di awal script
+        const urlParams = new URLSearchParams(window.location.search);
+        const transaksiTerakhir = urlParams.get('trx') || localStorage.getItem('last_transaction_id') || '';
+
         document.addEventListener('DOMContentLoaded', () => {
             if (!namaLogIn) {
                 alert("Sesi berakhir, silakan login kembali.");
@@ -126,10 +130,6 @@
         async function loadUserOrders() {
             const container = document.getElementById('order-container');
             container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan dari server...</p>`;
-
-            // Ambil ID Transaksi dari parameter URL (jika baru selesai checkout)
-            const urlParams = new URLSearchParams(window.location.search);
-            const activeTrxId = urlParams.get('trx') || localStorage.getItem('last_transaction_id') || '';
 
             try {
                 const url = `${APPS_SCRIPT_URL}?action=getTransactions&user=${encodeURIComponent(namaLogIn.trim())}`;
@@ -146,17 +146,42 @@
                 }
 
                 if (ordersArray.length > 0) {
-                    renderOrders(ordersArray, activeTrxId);
+                    // Jika ada ID transaksi dari halaman checkout,
+                    // tampilkan transaksi tersebut saja
+                    if (transaksiTerakhir) {
+                        const transaksiFiltered = ordersArray.filter(order =>
+                            String(order.id_transaksi || '').trim() === String(transaksiTerakhir).trim()
+                        );
+
+                        console.log("ID transaksi yang dicari:", transaksiTerakhir);
+                        console.log("Transaksi ditemukan:", transaksiFiltered);
+
+                        if (transaksiFiltered.length > 0) {
+                            renderOrders(transaksiFiltered, transaksiTerakhir);
+                        } else {
+                            renderOrders(ordersArray, transaksiTerakhir);
+                        }
+                    } else {
+                        renderOrders(ordersArray, transaksiTerakhir);
+                    }
+
                     localStorage.setItem('user_orders', JSON.stringify(ordersArray));
                 } else {
-                    renderOrders([], activeTrxId);
+                    renderOrders([], transaksiTerakhir);
                 }
 
             } catch (error) {
                 console.error("Gagal sinkronisasi pesanan dari server:", error);
                 let localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
                 if (localOrders.length > 0) {
-                    renderOrders(localOrders, activeTrxId);
+                    if (transaksiTerakhir) {
+                        const localFiltered = localOrders.filter(order =>
+                            String(order.id_transaksi || '').trim() === String(transaksiTerakhir).trim()
+                        );
+                        renderOrders(localFiltered.length > 0 ? localFiltered : localOrders, transaksiTerakhir);
+                    } else {
+                        renderOrders(localOrders, transaksiTerakhir);
+                    }
                 } else {
                     container.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data pesanan dari server.</p>`;
                 }
