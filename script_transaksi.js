@@ -93,7 +93,7 @@ function prosesPembayaranAkhir() {
     const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
     
     // Tentukan nilai secara pasti
-    let metodePembayaran = 'Tunai'; // Default aman
+    let metodePembayaran = 'tunai'; // Default aman
     if (selectedPayment) {
         metodePembayaran = selectedPayment.value; // Ini akan bernilai 'Tunai' atau 'QRIS' sesuai yang dipilih user
     }
