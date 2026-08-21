@@ -222,7 +222,7 @@ function prosesSemuaTransaksi() {
     localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
 
     // 2. Arahkan pengguna ke halaman checkout tanpa melakukan POST transaksi prematur
-    window.location.href = 'checkout.html';
+    window.location.href = 'transaksi.html';
 }
 
 // --- FUNGSI NAVIGASI LANDING PAGE ---
