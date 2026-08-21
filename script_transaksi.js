@@ -88,134 +88,139 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // --- EKSEKUSI KIRIM TRANSAKSI KE GOOGLE APPS SCRIPT (MENGGUNAKAN HIDDEN FORM) ---
 async function prosesPembayaranAkhir() {
-    const btnSubmit = document.getElementById('btn-proses-bayar');
-    const idUser = localStorage.getItem('idUser') || '';
+    const btnSubmit = document.getElementById('btn-proses-bayar');
+    const idUser = localStorage.getItem('idUser') || '';
 
-    // --- PERBAIKAN UTAMA: AMBIL NILAI RADIO BUTTON SECARA EKSPLISIT ---
-    const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
-    const metodePembayaran = selectedPayment ? selectedPayment.value.trim() : 'Tunai';
+    const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
+    const metodePembayaran = selectedPayment ? selectedPayment.value : 'Tunai';
 
-    const catatanElem = document.getElementById('catatan-transaksi');
-    const catatan = catatanElem ? catatanElem.value.trim() : '';
+    const catatanElem = document.getElementById('catatan-transaksi');
+    const catatan = catatanElem ? catatanElem.value.trim() : '';
 
-    if (!confirm(`Konfirmasi pemesanan sebesar ${formatRupiah(totalBayar)} dengan metode ${metodePembayaran}?`)) {
-        return;
-    }
+    if (!confirm(`Konfirmasi pemesanan sebesar ${formatRupiah(totalBayar)} dengan metode ${metodePembayaran}?`)) {
+        return;
+    }
 
-    if (btnSubmit) {
-        btnSubmit.disabled = true;
-        btnSubmit.innerText = "Memproses Pesanan...";
-    }
+    if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerText = "Memproses Pesanan...";
+    }
 
-    // Status awal menyesuaikan pilihan metode secara mutlak
-    const statusAwal = (metodePembayaran.toLowerCase() === 'tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
-    const idTransaksi = 'TRX-' + Date.now();
+    const statusAwal = (metodePembayaran === 'Tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
+    const idTransaksi = 'TRX-' + Date.now();
 
-    // Payload yang dikirim ke Google Apps Script
-    const payload = {
-        action: "createTransaction",
-        user: namaLogIn,
-        id_user: idUser,
-        id_transaksi: idTransaksi,
-        total_bayar: totalBayar,
-        metode_pembayaran: metodePembayaran, // Mengirim teks 'Tunai' atau 'QRIS' murni sesuai pilihan
-        status: statusAwal,
-        catatan: catatan,
-        items: currentCartData
-    };
+    // Payload dikirim ke Google Apps Script
+    const payload = {
+        action: "createTransaction",
+        user: namaLogIn,
+        id_user: idUser,
+        id_transaksi: idTransaksi,
+        total_bayar: totalBayar,
+        metode_pembayaran: metodePembayaran,
+        status: statusAwal,
+        catatan: catatan,
+        items: currentCartData
+    };
 
-    // --- DEBUG CHECKOUT (Cek F12 Console) ---
-    console.log("========== DEBUG CHECKOUT ==========");
-    console.log("Metode Pembayaran Terpilih:", metodePembayaran);
-    console.log("Status Awal:", statusAwal);
-    console.log("Payload yang dikirim:", payload);
-    console.log("====================================");
+    // --- DEBUG CHECKOUT ---
+    console.log("========== DEBUG CHECKOUT ==========");
+    console.log("Radio dipilih:", selectedPayment);
+    console.log("Value radio:", selectedPayment ? selectedPayment.value : "TIDAK ADA");
+    console.log("Metode pembayaran:", metodePembayaran);
+    console.log("ID transaksi:", idTransaksi);
+    console.log("Payload:", payload);
+    console.log("====================================");
 
-    function bersihkanKeranjangLokal() {
-        localStorage.removeItem('cart');
-        localStorage.removeItem('keranjang');
-        localStorage.removeItem('cartItems');
-        localStorage.removeItem('spg_cart');
-        localStorage.removeItem('checkout_items');
-        if (namaLogIn) {
-            localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
-        }
-        if (window.updateCartBadge) window.updateCartBadge();
-    }
+    // Fungsi pembantu untuk membersihkan keranjang lokal
+    function bersihkanKeranjangLokal() {
+        localStorage.removeItem('cart');
+        localStorage.removeItem('keranjang');
+        localStorage.removeItem('cartItems');
+        localStorage.removeItem('spg_cart');
+        localStorage.removeItem('checkout_items');
+        if (namaLogIn) {
+            localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
+        }
+        if (window.updateCartBadge) window.updateCartBadge();
+    }
 
-    function arahkanHalaman() {
-        localStorage.setItem('last_transaction_id', idTransaksi);
-        
-        // Pengecekan navigasi berdasarkan nilai variabel metodePembayaran yang pasti
-        if (metodePembayaran.toLowerCase().includes('qris')) {
-            const qrisData = {
-                id_transaksi: idTransaksi,
-                total_bayar: totalBayar,
-                nama_user: namaLogIn,
-                qr_code_url: ''
-            };
-            localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
-            alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
-            window.location.replace('qris_payment.html');
-        } else {
-            alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
-            window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
-        }
-    }
+    // Fungsi pembantu untuk melakukan navigasi halaman (VERSI BARU)
+    function arahkanHalaman() {
+        // Simpan transaksi terakhir
+        localStorage.setItem('last_transaction_id', idTransaksi);
+        
+        if (metodePembayaran === 'QRIS') {
+            const qrisData = {
+                id_transaksi: idTransaksi,
+                total_bayar: totalBayar,
+                nama_user: namaLogIn,
+                qr_code_url: ''
+            };
+            localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
+            alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
+            window.location.replace('qris_payment.html');
+        } else {
+            alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
+            window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
+        }
+    }
 
-    try {
-        let iframe = document.getElementById('hidden_iframe');
-        if (!iframe) {
-            iframe = document.createElement('iframe');
-            iframe.name = 'hidden_iframe';
-            iframe.id = 'hidden_iframe';
-            iframe.style.display = 'none';
-            document.body.appendChild(iframe);
-        }
+    try {
+        // --- 1. BUAT ATAU AMBIL IFRAME TERSEMBUNYI ---
+        let iframe = document.getElementById('hidden_iframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.name = 'hidden_iframe';
+            iframe.id = 'hidden_iframe';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
 
-        let form = document.getElementById('hidden_form_transaksi');
-        if (!form) {
-            form = document.createElement('form');
-            form.id = 'hidden_form_transaksi';
-            form.method = 'POST';
-            form.action = APPS_SCRIPT_URL;
-            form.target = 'hidden_iframe';
-            document.body.appendChild(form);
-        } else {
-            form.innerHTML = '';
-        }
+        // --- 2. BUAT ATAU AMBIL FORM TERSEMBUNYI ---
+        let form = document.getElementById('hidden_form_transaksi');
+        if (!form) {
+            form = document.createElement('form');
+            form.id = 'hidden_form_transaksi';
+            form.method = 'POST';
+            form.action = APPS_SCRIPT_URL;
+            form.target = 'hidden_iframe';
+            document.body.appendChild(form);
+        } else {
+            form.innerHTML = '';
+        }
 
-        const inputPayload = document.createElement('input');
-        inputPayload.type = 'hidden';
-        inputPayload.name = 'payload';
-        inputPayload.value = JSON.stringify(payload);
-        form.appendChild(inputPayload);
+        const inputPayload = document.createElement('input');
+        inputPayload.type = 'hidden';
+        inputPayload.name = 'payload';
+        inputPayload.value = JSON.stringify(payload);
+        form.appendChild(inputPayload);
 
-        form.submit();
+        // --- 3. SUBMIT FORM KE GOOGLE APPS SCRIPT ---
+        form.submit();
 
-        setTimeout(() => {
-            form.innerHTML = '';
-            const clearPayload = document.createElement('input');
-            clearPayload.type = 'hidden';
-            clearPayload.name = 'payload';
-            clearPayload.value = JSON.stringify({
-                action: "clearCartAfterCheckout",
-                user: namaLogIn,
-                items: currentCartData
-            });
-            form.appendChild(clearPayload);
-            form.submit();
-        }, 1200);
+        setTimeout(() => {
+            form.innerHTML = '';
+            const clearPayload = document.createElement('input');
+            clearPayload.type = 'hidden';
+            clearPayload.name = 'payload';
+            clearPayload.value = JSON.stringify({
+                action: "clearCartAfterCheckout",
+                user: namaLogIn,
+                items: currentCartData
+            });
+            form.appendChild(clearPayload);
+            form.submit();
+        }, 1200);
 
-        bersihkanKeranjangLokal();
-        arahkanHalaman();
+        bersihkanKeranjangLokal();
+        arahkanHalaman();
 
-    } catch (error) {
-        console.error("Error Hidden Form Submission:", error);
-        alert("Terjadi kesalahan saat memproses form transaksi.");
-        if (btnSubmit) {
-            btnSubmit.disabled = false;
-            btnSubmit.innerText = "Konfirmasi & Bayar Sekarang";
-        }
-    }
+    } catch (error) {
+        console.error("Error Hidden Form Submission:", error);
+        alert("Terjadi kesalahan saat memproses form transaksi.");
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = "Konfirmasi & Bayar Sekarang";
+        }
+    }
 }
