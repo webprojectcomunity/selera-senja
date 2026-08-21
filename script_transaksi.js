@@ -89,16 +89,17 @@ function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const idUser = localStorage.getItem('idUser') || '';
 
-    // --- TANGKAP LANGSUNG DARI NAME="payment_method" ---
-    const selectedPayment = document.querySelector('input[name="payment_method"]:checked');
-    
-    // Tentukan nilai secara pasti
-    let metodePembayaran = 'tunai'; // Default aman
-    if (selectedPayment) {
-        metodePembayaran = selectedPayment.value; // Ini akan bernilai 'Tunai' atau 'QRIS' sesuai yang dipilih user
+    // 1. Tangkap radio button tercentang secara akurat
+    const radioElements = document.getElementsByName('payment_method');
+    let metodePembayaran = 'Tunai'; // Default Fallback
+
+    for (const radio of radioElements) {
+        if (radio.checked) {
+            metodePembayaran = radio.value;
+            break;
+        }
     }
 
-    // --- DEBUGGING: Cek hasil tangkapan di Console Browser (Tekan F12) ---
     console.log("METODE PEMBAYARAN TERPILIH:", metodePembayaran);
 
     const catatanElem = document.getElementById('catatan-transaksi');
@@ -113,8 +114,9 @@ function prosesPembayaranAkhir() {
         btnSubmit.innerText = "Memproses Pesanan...";
     }
 
-    // Tentukan status awal berdasarkan metode pembayaran (Case-sensitive aman)
-    const statusAwal = (metodePembayaran.toLowerCase() === 'tunai') ? 'Sedang Dikemas' : 'Belum Bayar';
+    // Tentukan status awal berdasarkan metode pembayaran
+    const isTunai = metodePembayaran.toLowerCase() === 'tunai';
+    const statusAwal = isTunai ? 'Sedang Dikemas' : 'Belum Bayar';
     const idTransaksi = 'TRX-' + Date.now();
 
     const payload = {
@@ -129,7 +131,7 @@ function prosesPembayaranAkhir() {
         items: currentCartData
     };
 
-    // --- BUAT IFRAME & FORM TERSEMBUNYI UNTUK MENGIRIM DATA TANPA CORS ---
+    // 2. Buat iframe & form tersembunyi untuk bypass CORS
     const iframeName = 'hidden_iframe_' + Date.now();
     let iframe = document.getElementById(iframeName);
     if (!iframe) {
@@ -150,22 +152,10 @@ function prosesPembayaranAkhir() {
     inputPayload.value = JSON.stringify(payload);
     form.appendChild(inputPayload);
 
-    const clearPayload = {
-        action: "clearCartAfterCheckout",
-        user: namaLogIn,
-        items: currentCartData
-    };
-
-    const inputClear = document.createElement('input');
-    inputClear.type = 'hidden';
-    inputClear.name = 'clear_payload';
-    inputClear.value = JSON.stringify(clearPayload);
-    form.appendChild(inputClear);
-
     document.body.appendChild(form);
     form.submit();
 
-    // Bersihkan localStorage lokal
+    // 3. Bersihkan localStorage lokal
     localStorage.removeItem('cart');
     localStorage.removeItem('keranjang');
     localStorage.removeItem('cartItems');
@@ -176,9 +166,10 @@ function prosesPembayaranAkhir() {
 
     localStorage.setItem('last_transaction_id', idTransaksi);
 
-    // Berikan jeda sejenak lalu pindah halaman sesuai metode pembayaran
+    // 4. Pengalihan Halaman
     setTimeout(() => {
-        if (metodePembayaran.toUpperCase() === 'QRIS') {
+        if (!isTunai) {
+            // Jika QRIS
             const qrisData = {
                 id_transaksi: idTransaksi,
                 total_bayar: totalBayar,
@@ -189,6 +180,7 @@ function prosesPembayaranAkhir() {
             alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
             window.location.replace('qris_payment.html');
         } else {
+            // Jika Tunai
             alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
             window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
         }
