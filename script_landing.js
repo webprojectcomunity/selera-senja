@@ -16,6 +16,29 @@ function convertDriveUrl(url) {
 }
 
 /************************************************
+ * FUNGSI SIDEBAR NAVIGATION
+ ************************************************/
+function openSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+    }
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+    }
+}
+
+/************************************************
  * FUNGSI BADGE & SINKRONISASI KERANJANG
  ************************************************/
 function updateCartBadge() {
@@ -23,8 +46,8 @@ function updateCartBadge() {
   if (!badge) return;
 
   let rawCart = localStorage.getItem('cart') || 
-            localStorage.getItem('keranjang') || 
-            localStorage.getItem('cartItems');
+                localStorage.getItem('keranjang') || 
+                localStorage.getItem('cartItems');
 
   if (!rawCart) {
     for (let i = 0; i < localStorage.length; i++) {
@@ -353,11 +376,15 @@ window.addEventListener('storage', (event) => {
   }
 });
 
-window.addEventListener('cartUpdated', updateCartBadge);
+// Window Global Exports
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
 window.updateCartBadge = updateCartBadge;
 window.syncCartFromDatabase = syncCartFromDatabase;
 window.openImageModal = openImageModal;
 window.closeImageModal = closeImageModal;
+window.jalankanPencarian = jalankanPencarian;
+window.logout = logout;
 
 history.pushState(null, null, location.href);
 window.onpopstate = () => history.go(1);
