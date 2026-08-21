@@ -51,30 +51,33 @@ function loadCartInstantly() {
         cartList.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat keranjang...</p>`;
     }
 
-    // 2. Tarik data terbaru dari server Google di latar belakang via JSONP
+    // 2. Tarik data terbaru dari server Google di latar belakang via Fetch API Standar
     fetchCartFromServer();
 }
 
-// --- FUNGSI AMBIL DATA DARI SERVER MENGGUNAKAN JSONP (MENGATASI CORS) ---
-function fetchCartFromServer() {
-    const callbackName = 'cartCallback_' + Math.random().toString(36).substring(2, 9);
+// --- FUNGSI AMBIL DATA DARI SERVER MENGGUNAKAN FETCH STANDAR (MENGATASI CHROME ANDROID) ---
+async function fetchCartFromServer() {
+    const url = `${APPS_SCRIPT_URL}?action=getCart&user=${encodeURIComponent(namaLogIn.trim())}`;
+    
+    console.log("Memanggil API Fetch:", url);
 
-    // Definisikan callback global
-    window[callbackName] = function(chartResult) {
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Accept': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const chartResult = await response.json();
+
         console.log("=================================");
-        console.log("RESPONSE JSONP DARI APPS SCRIPT");
+        console.log("RESPONSE JSON DARI APPS SCRIPT");
         console.log("=================================");
         console.log("Full response:", chartResult);
-        console.log("success:", chartResult?.success);
-        console.log("data:", chartResult?.data);
-        console.log("data adalah array:", Array.isArray(chartResult?.data));
-
-        // Hapus script setelah callback diterima
-        const scriptElement = document.getElementById(callbackName);
-        if (scriptElement) {
-            scriptElement.remove();
-        }
-        delete window[callbackName];
 
         // Validasi response
         if (!chartResult || chartResult.success !== true || !Array.isArray(chartResult.data)) {
@@ -92,32 +95,11 @@ function fetchCartFromServer() {
 
         // Render data
         renderCartItems(currentCartItems);
-    };
 
-    // Buat script JSONP
-    const script = document.createElement('script');
-    script.id = callbackName;
-    script.src = `${APPS_SCRIPT_URL}?action=getCart&user=${encodeURIComponent(namaLogIn.trim())}&callback=${encodeURIComponent(callbackName)}`;
-
-    console.log("Memanggil API JSONP:");
-    console.log(script.src);
-
-    // Error loading
-    script.onerror = function(error) {
-        console.error("GAGAL SINKRONISASI KERANJANG VIA JSONP");
-        console.error("URL:", script.src);
-        console.error("Error:", error);
-
-        const scriptElement = document.getElementById(callbackName);
-        if (scriptElement) {
-            scriptElement.remove();
-        }
-        delete window[callbackName];
-
+    } catch (error) {
+        console.error("GAGAL SINKRONISASI KERANJANG VIA FETCH:", error);
         handleFetchError();
-    };
-
-    document.body.appendChild(script);
+    }
 }
 
 // --- FUNGSI PENANGANAN GAGAL AMBIL DATA ---
@@ -306,7 +288,7 @@ function logout() {
     }
 }
 
-// --- EKSKUSI GLOBAL WINDOW ---
+// --- EKSEKUSI GLOBAL WINDOW ---
 window.prosesSemuaTransaksi = prosesSemuaTransaksi;
 window.hapusItemKeranjang = hapusItemKeranjang;
 window.bukaKeranjang = bukaKeranjang;
