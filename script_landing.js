@@ -115,10 +115,6 @@ async function syncCartFromDatabase(username) {
     updateCartBadge();
   }
 }
-
-/************************************************
- * FUNGSI BADGE ORDERS (TRANSAKSI)
- ************************************************/
 async function updateOrderBadge() {
     const currentIdUser = localStorage.getItem('idUser') || '';
     const orderBadge = document.getElementById('order-badge');
@@ -130,14 +126,29 @@ async function updateOrderBadge() {
         const response = await fetch(url);
         const result = await response.json();
         
-        let totalOrders = 0;
+        let rawTransactions = [];
         if (Array.isArray(result)) {
-            totalOrders = result.length;
+            rawTransactions = result;
         } else if (result && result.success && Array.isArray(result.data)) {
-            totalOrders = result.data.length;
+            rawTransactions = result.data;
         } else if (result && Array.isArray(result.data)) {
-            totalOrders = result.data.length;
+            rawTransactions = result.data;
         }
+
+        // FILTER: Hanya hitung pesanan yang BELUM selesai/dibatalkan
+        // Sesuaikan kata kunci status ("selesai", "completed", "dibatalkan", "cancelled") 
+        // dengan teks status yang disimpan di database Anda.
+        const activeOrders = rawTransactions.filter(item => {
+            // Ambil kolom status (sesuaikan key objek, misal: item.status atau item.Status)
+            const status = (item.status || item.Status || '').toLowerCase().trim();
+            
+            // Status yang membuat badge DIHILANGKAN/TIDAK DIHITUNG:
+            const isFinished = status === 'selesai' || status === 'completed' || status === 'dibatalkan' || status === 'cancelled';
+            
+            return !isFinished; // Hanya ambil yang aktif (Belum selesai)
+        });
+
+        const totalOrders = activeOrders.length;
 
         if (totalOrders > 0) {
             orderBadge.textContent = totalOrders > 99 ? '99+' : totalOrders;
@@ -149,7 +160,6 @@ async function updateOrderBadge() {
         console.error("Gagal memuat jumlah pesanan untuk badge:", error);
     }
 }
-
 /****************--------------------------------
  * FUNGSI POP-UP GAMBAR PRODUK
  ************************************************/
