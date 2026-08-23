@@ -29,7 +29,7 @@ function renderProfilePhoto() {
     }
 }
 
-/********************************----------------
+/************************************************
  * FUNGSI SIDEBAR NAVIGATION
  ************************************************/
 function openSidebar() {
@@ -52,7 +52,7 @@ function closeSidebar() {
     }
 }
 
-/********************************----------------
+/************************************************
  * FUNGSI BADGE & SINKRONISASI KERANJANG
  ************************************************/
 function updateCartBadge() {
@@ -116,6 +116,40 @@ async function syncCartFromDatabase(username) {
   }
 }
 
+/************************************************
+ * FUNGSI BADGE ORDERS (TRANSAKSI)
+ ************************************************/
+async function updateOrderBadge() {
+    const currentIdUser = localStorage.getItem('idUser') || '';
+    const orderBadge = document.getElementById('order-badge');
+    
+    if (!currentIdUser || !orderBadge) return;
+
+    try {
+        const url = `${APPS_SCRIPT_URL}?action=getTransactions&id_user=${encodeURIComponent(currentIdUser.trim())}`;
+        const response = await fetch(url);
+        const result = await response.json();
+        
+        let totalOrders = 0;
+        if (Array.isArray(result)) {
+            totalOrders = result.length;
+        } else if (result && result.success && Array.isArray(result.data)) {
+            totalOrders = result.data.length;
+        } else if (result && Array.isArray(result.data)) {
+            totalOrders = result.data.length;
+        }
+
+        if (totalOrders > 0) {
+            orderBadge.textContent = totalOrders > 99 ? '99+' : totalOrders;
+            orderBadge.style.display = 'flex';
+        } else {
+            orderBadge.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Gagal memuat jumlah pesanan untuk badge:", error);
+    }
+}
+
 /****************--------------------------------
  * FUNGSI POP-UP GAMBAR PRODUK
  ************************************************/
@@ -146,7 +180,6 @@ async function loadMenu(searchQuery = '', page = 1) {
     const grid = document.getElementById('product-grid');
     if (!grid) return;
     
-    // 1. Ambil data dari memory cache atau localStorage jika tersedia untuk instan render
     if (cachedData.length === 0) {
         const savedCache = localStorage.getItem('product_cache');
         if (savedCache) {
@@ -164,7 +197,6 @@ async function loadMenu(searchQuery = '', page = 1) {
         renderProductGrid(cachedData, searchQuery, grid, currentPage);
     }
 
-    // 2. Ambil data terbaru dari server di latar belakang (Background Fetch)
     try {
         const response = await fetch(APPS_SCRIPT_URL + '?action=getProducts');
         const result = await response.json();
@@ -181,9 +213,6 @@ async function loadMenu(searchQuery = '', page = 1) {
     }
 }
 
-/**
- * HELPER: Render Grid Produk + Kontrol Pagination (Max 10 per halaman)
- */
 function renderProductGrid(sourceData, searchQuery, gridElement, page = 1) {
     let data = sourceData;
     
@@ -203,14 +232,12 @@ function renderProductGrid(sourceData, searchQuery, gridElement, page = 1) {
         return;
     }
 
-    // Hitung Total Halaman
     const totalPages = Math.ceil(data.length / itemsPerPage);
     
     if (page > totalPages) page = totalPages;
     if (page < 1) page = 1;
     currentPage = page;
 
-    // Potong data agar hanya menampilkan maksimal 10 item per halaman
     const startIndex = (page - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const paginatedData = data.slice(startIndex, endIndex);
@@ -241,13 +268,9 @@ function renderProductGrid(sourceData, searchQuery, gridElement, page = 1) {
         gridElement.insertAdjacentHTML('beforeend', card);
     });
 
-    // Render tombol navigasi halaman di bawah grid produk
     renderPaginationControls(totalPages, page, searchQuery);
 }
 
-/**
- * HELPER: Menampilkan Tombol Navigasi Halaman (Prev / Next)
- */
 function renderPaginationControls(totalPages, page, searchQuery) {
     let container = document.getElementById('pagination-container');
     
@@ -291,9 +314,6 @@ function removePaginationContainer() {
     if (container) container.remove();
 }
 
-/**
- * Event Delegation untuk tombol tambah (+)
- */
 function initEventDelegation() {
     document.addEventListener('click', function(e) {
         if (e.target && e.target.classList.contains('add-btn')) {
@@ -309,7 +329,7 @@ function initEventDelegation() {
 
 async function jalankanPencarian() {
     const searchQuery = document.getElementById('search-food').value;
-    await loadMenu(searchQuery, 1); // Reset otomatis ke halaman 1 saat melakukan pencarian
+    await loadMenu(searchQuery, 1);
 }
 
 function logout() {
@@ -321,11 +341,12 @@ function logout() {
     }
 }
 
-/****************--------------------------------
+/************************************************
  * INISIALISASI HALAMAN & EVENT LISTENERS
- *****************-------------------------------*/
+ ************************************************/
 document.addEventListener('DOMContentLoaded', async () => {
     updateCartBadge();
+    updateOrderBadge(); // Panggil fungsi badge pesanan di sini
 
     const greetingElement = document.getElementById('user-greeting');
     const urlParams = new URLSearchParams(window.location.search);
@@ -356,10 +377,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.history.replaceState({}, document.title, window.location.pathname);
                 
                 syncCartFromDatabase(data.user.nama);
+                updateOrderBadge(); // Perbarui badge pesanan setelah login QR berhasil
                 loadMenu();
                 initEventDelegation();
-                
-                // Render foto langsung
                 renderProfilePhoto();
                 return;
             } else {
@@ -386,7 +406,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (greetingElement) greetingElement.innerText = `Hallo ${namaLogIn} !`;
 
-    // Pastikan foto tersinkronisasi otomatis jika kosong di localStorage tetapi idUser tersedia
     if (!localStorage.getItem('fotoUser') && idUser) {
         try {
             const profileRes = await fetch(`${APPS_SCRIPT_URL_API}?action=getUserProfile&id_user=${idUser}`);
@@ -400,10 +419,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Render foto profil ke elemen HTML
     renderProfilePhoto();
-
     syncCartFromDatabase(namaLogIn);
+    updateOrderBadge();
     loadMenu();
     initEventDelegation();
 });
@@ -418,6 +436,7 @@ window.addEventListener('storage', (event) => {
 window.openSidebar = openSidebar;
 window.closeSidebar = closeSidebar;
 window.updateCartBadge = updateCartBadge;
+window.updateOrderBadge = updateOrderBadge;
 window.syncCartFromDatabase = syncCartFromDatabase;
 window.openImageModal = openImageModal;
 window.closeImageModal = closeImageModal;
