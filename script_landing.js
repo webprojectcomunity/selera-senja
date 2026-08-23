@@ -17,6 +17,18 @@ function convertDriveUrl(url) {
     } catch (e) { return url; }
 }
 
+/**
+ * HELPER: Render foto profil agar konsisten dan bisa dipakai ulang
+ */
+function renderProfilePhoto() {
+    const savedFoto = localStorage.getItem('fotoUser');
+    const profilePicDiv = document.querySelector('.profile-pic');
+    if (profilePicDiv && savedFoto) {
+        const finalFotoUrl = convertDriveUrl(savedFoto);
+        profilePicDiv.innerHTML = `<img src="${finalFotoUrl}" alt="Foto Profil" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+    }
+}
+
 /********************************----------------
  * FUNGSI SIDEBAR NAVIGATION
  ************************************************/
@@ -40,7 +52,7 @@ function closeSidebar() {
     }
 }
 
-/************************************************
+/********************************----------------
  * FUNGSI BADGE & SINKRONISASI KERANJANG
  ************************************************/
 function updateCartBadge() {
@@ -104,7 +116,7 @@ async function syncCartFromDatabase(username) {
   }
 }
 
-/********************************----------------
+/****************--------------------------------
  * FUNGSI POP-UP GAMBAR PRODUK
  ************************************************/
 function openImageModal(imgUrl, productName) {
@@ -126,7 +138,7 @@ function closeImageModal() {
     }
 }
 
-/********************************----------------
+/****************--------------------------------
  * FUNGSI UTAMA: Load Menu dengan LocalStorage Cache & Pagination
  ************************************************/
 async function loadMenu(searchQuery = '', page = 1) {
@@ -309,24 +321,17 @@ function logout() {
     }
 }
 
-/********************************----------------
+/****************--------------------------------
  * INISIALISASI HALAMAN & EVENT LISTENERS
- ************************************************/
+ *****************-------------------------------*/
 document.addEventListener('DOMContentLoaded', async () => {
     updateCartBadge();
 
-    // Memuat foto profil dari localStorage jika ada
-    const savedFoto = localStorage.getItem('fotoUser');
-    const profilePicDiv = document.querySelector('.profile-pic');
-    if (profilePicDiv && savedFoto) {
-        profilePicDiv.innerHTML = `<img src="${savedFoto}" alt="Foto Profil">`;
-    }
-
     const greetingElement = document.getElementById('user-greeting');
-    
     const urlParams = new URLSearchParams(window.location.search);
     const qrUserId = urlParams.get('userId');
 
+    // 1. Tangani proses Login QR Code
     if (qrUserId) {
         if (greetingElement) greetingElement.innerText = "Mengautentikasi...";
         
@@ -345,17 +350,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('idUser', data.user.id_user);
                 if (data.user.foto) {
                     localStorage.setItem('fotoUser', data.user.foto);
-                    if (profilePicDiv) profilePicDiv.innerHTML = `<img src="${data.user.foto}" alt="Foto Profil">`;
                 }
                 
                 if (greetingElement) greetingElement.innerText = `Hallo ${data.user.nama} !`;
-                
                 window.history.replaceState({}, document.title, window.location.pathname);
                 
                 syncCartFromDatabase(data.user.nama);
-                
                 loadMenu();
                 initEventDelegation();
+                
+                // Render foto langsung
+                renderProfilePhoto();
                 return;
             } else {
                 alert("Gagal Login QR: " + data.message);
@@ -370,31 +375,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // 2. Tangani Login Reguler
     const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser');
+    const idUser = localStorage.getItem('idUser');
+    
     if (!namaLogIn) {
         window.location.replace('index.html');
         return;
     }
 
-    // Pengecekan tambahan untuk memastikan data foto tersimpan di localStorage jika pengguna masuk secara reguler
-    const currentPhoto = localStorage.getItem('fotoUser');
-    if (!currentPhoto && localStorage.getItem('idUser')) {
+    if (greetingElement) greetingElement.innerText = `Hallo ${namaLogIn} !`;
+
+    // Pastikan foto tersinkronisasi otomatis jika kosong di localStorage tetapi idUser tersedia
+    if (!localStorage.getItem('fotoUser') && idUser) {
         try {
-            const profileRes = await fetch(`${APPS_SCRIPT_URL}?action=getUserProfile&id_user=${localStorage.getItem('idUser')}`);
+            const profileRes = await fetch(`${APPS_SCRIPT_URL_API}?action=getUserProfile&id_user=${idUser}`);
             const profileJson = await profileRes.json();
+            
             if (profileJson.success && profileJson.data && profileJson.data.foto) {
                 localStorage.setItem('fotoUser', profileJson.data.foto);
-                if (profilePicDiv) profilePicDiv.innerHTML = `<img src="${profileJson.data.foto}" alt="Foto Profil">`;
             }
         } catch (err) {
-            console.error("Gagal sinkronisasi profil:", err);
+            console.error("Gagal memuat foto profil otomatis:", err);
         }
     }
 
-    if (greetingElement) greetingElement.innerText = `Hallo ${namaLogIn} !`;
-    
-    syncCartFromDatabase(namaLogIn);
+    // Render foto profil ke elemen HTML
+    renderProfilePhoto();
 
+    syncCartFromDatabase(namaLogIn);
     loadMenu();
     initEventDelegation();
 });
