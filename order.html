@@ -111,28 +111,31 @@
 
     <script>
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
-        const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
+        
+        // Menggunakan ID User agar perubahan nama profil tidak memutus riwayat transaksi
+        const currentIdUser = localStorage.getItem('idUser') || '';
 
         // Tangkap parameter URL dan localStorage di awal script
         const urlParams = new URLSearchParams(window.location.search);
         const transaksiTerakhir = urlParams.get('trx') || localStorage.getItem('last_transaction_id') || '';
 
         document.addEventListener('DOMContentLoaded', () => {
-            if (!namaLogIn) {
-                alert("Sesi berakhir, silakan login kembali.");
+            if (!currentIdUser) {
+                alert("Sesi berakhir atau ID Pengguna tidak ditemukan, silakan login kembali.");
                 window.location.replace('index.html');
                 return;
             }
             loadUserOrders();
         });
 
-        // --- FUNGSI MEMUAT RIWAYAT PESANAN ---
+        // --- FUNGSI MEMUAT RIWAYAT PESANAN BERDASARKAN ID_USER ---
         async function loadUserOrders() {
             const container = document.getElementById('order-container');
             container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan dari server...</p>`;
 
             try {
-                const url = `${APPS_SCRIPT_URL}?action=getTransactions&user=${encodeURIComponent(namaLogIn.trim())}`;
+                // Mengirim parameter id_user ke backend Google Apps Script
+                const url = `${APPS_SCRIPT_URL}?action=getTransactions&id_user=${encodeURIComponent(currentIdUser.trim())}`;
                 const response = await fetch(url);
                 const result = await response.json();
                 
@@ -205,7 +208,7 @@
                 }
 
                 const card = document.createElement('div');
-                card.className = `order-card ${isCurrentTrx ? 'highlight' : ''}`;
+                card.className = `order-card ${isCurrentTab ? '' : ''} ${isCurrentTrx ? 'highlight' : ''}`;
                 card.innerHTML = `
                     <div class="order-header">
                         <span class="order-id">${order.id_transaksi || 'TRX-XXXX'}</span>
