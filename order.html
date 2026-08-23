@@ -122,6 +122,10 @@
                 window.location.replace('index.html');
                 return;
             }
+            
+            // PENTING: Bersihkan cache riwayat user lama agar tidak tercampur
+            localStorage.removeItem('user_orders');
+            
             loadUserOrders();
         });
 
@@ -130,6 +134,8 @@
             container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat data pesanan dari server...</p>`;
 
             try {
+                console.log("Mengambil transaksi untuk ID User:", currentIdUser);
+                
                 const url = `${APPS_SCRIPT_URL}?action=getTransactions&id_user=${encodeURIComponent(currentIdUser.trim())}`;
                 const response = await fetch(url);
                 const result = await response.json();
@@ -149,16 +155,12 @@
                     localStorage.setItem('user_orders', JSON.stringify(ordersArray));
                 } else {
                     renderOrders([], transaksiTerakhir);
+                    localStorage.removeItem('user_orders');
                 }
 
             } catch (error) {
                 console.error("Gagal sinkronisasi pesanan dari server:", error);
-                let localOrders = JSON.parse(localStorage.getItem('user_orders') || '[]');
-                if (localOrders.length > 0) {
-                    renderOrders(localOrders, transaksiTerakhir);
-                } else {
-                    container.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data pesanan dari server.</p>`;
-                }
+                container.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data pesanan dari server.</p>`;
             }
         }
 
@@ -198,7 +200,6 @@
                 }
 
                 const card = document.createElement('div');
-                // DIPERBAIKI: Menghapus referensi isCurrentTab yang menyebabkan error
                 card.className = `order-card ${isCurrentTrx ? 'highlight' : ''}`;
                 card.innerHTML = `
                     <div class="order-header">
