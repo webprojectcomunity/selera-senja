@@ -2,200 +2,152 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pengaturan Alamat - TomTom Maps</title>
-  
-  <!-- CSS TomTom Maps SDK -->
+  <title>Pengaturan Alamat - TomTom Map</title>
+  <!-- TomTom Maps SDK CSS -->
   <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css'>
-  
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f9; }
-    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: bold; }
-    input[type="text"], textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    #map { height: 300px; width: 100%; margin-bottom: 15px; border-radius: 4px; background: #e9ecef; }
-    button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
-    button:hover { background: #0056b3; }
-    .info-user { background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
+    #map { width: 100%; height: 400px; margin-bottom: 15px; }
+    .form-group { margin-bottom: 10px; }
+    label { display: block; font-weight: bold; }
+    input { width: 100%; padding: 8px; box-sizing: border-box; }
   </style>
 </head>
 <body>
 
-<div class="container">
   <h2>Pengaturan Alamat Pengguna</h2>
   
-  <div class="info-user" id="infoUser">
-    Memuat data sesi user...
-  </div>
-  
-  <form id="addressForm" style="display: none;">
-    <div class="form-group">
-      <label>Geser Pin atau Klik pada Peta:</label>
-      <div id="map"></div>
-    </div>
+  <div id="map"></div>
 
+  <form id="formAlamat" onsubmit="simpanAlamat(event)">
     <div class="form-group">
-      <label for="latitude">Latitude:</label>
+      <label>Latitude (Kolom G):</label>
       <input type="text" id="latitude" name="latitude" readonly required>
     </div>
-
+    
     <div class="form-group">
-      <label for="longitude">Longitude:</label>
+      <label>Longitude (Kolom H):</label>
       <input type="text" id="longitude" name="longitude" readonly required>
     </div>
 
     <div class="form-group">
-      <label for="nama_jalan">Nama Jalan / Detail Alamat (Manual):</label>
-      <textarea id="nama_jalan" name="nama_jalan" rows="3" placeholder="Contoh: Jl. Merdeka No. 45, RT 01/RW 02" required></textarea>
+      <label>Nama Jalan / Alamat Manual (Kolom I):</label>
+      <input type="text" id="nama_jalan" name="nama_jalan" placeholder="Masukkan nama jalan atau patokan..." required>
     </div>
 
-    <button type="submit" id="btnSimpan">Simpan Alamat</button>
+    <button type="submit">Simpan Alamat</button>
   </form>
-</div>
 
-<!-- JS TomTom Maps SDK -->
-<script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
-<script>
-  var urlWebApps = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
-  var tomtomApiKey = "eEDlFbYFgMqbARs7GYv39ogTM5MzYogE";
-
-  var idUser = localStorage.getItem('idUser');
-  var namaUser = localStorage.getItem('namaUser');
-  var emailUser = localStorage.getItem('emailUser');
-
-  var map, marker;
-  // Koordinat default wilayah Karimun, Kepri (Latitude, Longitude)
-  var defaultLat = 0.9103;
-  var defaultLng = 103.4435;
-
-  window.onload = function() {
-    if (!idUser) {
-      document.getElementById('infoUser').innerHTML = "<b style='color:red;'>Sesi habis atau Anda belum login. Silakan login terlebih dahulu.</b>";
-      return;
-    }
-
-    document.getElementById('infoUser').innerHTML = "Login sebagai: <b>" + (namaUser || idUser) + "</b> (" + idUser + ")";
+  <!-- TomTom Maps SDK JS -->
+  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
+  <script>
+    // Ganti dengan API Key TomTom Anda
+    var tomtomApiKey = 'MASUKKAN_TOMTOM_API_KEY_ANDA'; 
     
-    // Tampilkan form terlebih dahulu agar kontainer #map memiliki dimensi (width/height) yang valid sebelum TomTom merender
-    document.getElementById('addressForm').style.display = "block";
+    // Default koordinat cadangan (misal: Wilayah Karimun)
+    var defaultLat = 0.9103;
+    var defaultLng = 103.4435;
 
-    // Beri jeda sekejap (setTimeout) agar DOM selesai dirender browser sebelum memuat peta (mencegah lag/blank)
-    setTimeout(function() {
-      initTomTomMap(defaultLat, defaultLng);
-      fetchDataUser(idUser);
-    }, 100);
-  };
+    var map, marker;
+    
+    // Ambil ID user dari localStorage atau sesi aktif Anda
+    var currentUserId = localStorage.getItem('id_user') || "USR0001"; 
 
-  function initTomTomMap(lat, lng) {
-    var parsedLat = parseFloat(lat);
-    var parsedLng = parseFloat(lng);
+    document.addEventListener("DOMContentLoaded", function() {
+      // 1. Cek apakah di database (lewat localStorage/API Get) sudah ada data lat/lng sebelumnya
+      // Jika kosong, gunakan Geolocation Browser atau Default Karimun
+      initializeMapAndLocation();
+    });
 
-    // Validasi batas logis koordinat bumi untuk mencegah error SDK TomTom
-    if (isNaN(parsedLat) || isNaN(parsedLng) || parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
-      console.warn("Koordinat tidak valid ditemukan di database, menggunakan default.");
-      parsedLat = defaultLat;
-      parsedLng = defaultLng;
+    function initializeMapAndLocation() {
+      // Coba deteksi lokasi GPS perangkat pengguna secara otomatis
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            var userLat = position.coords.latitude;
+            var userLng = position.coords.longitude;
+            setupMap(userLat, userLng);
+          },
+          function(error) {
+            console.warn("Gagal mendeteksi GPS browser, menggunakan koordinat default.");
+            setupMap(defaultLat, defaultLng);
+          },
+          { timeout: 10000, enableHighAccuracy: true }
+        );
+      } else {
+        setupMap(defaultLat, defaultLng);
+      }
     }
 
-    if (map) {
-      map.setCenter([parsedLng, parsedLat]);
-      marker.setLngLat([parsedLng, parsedLat]);
-    } else {
+    function setupMap(lat, lng) {
       map = tt.map({
         key: tomtomApiKey,
         container: 'map',
-        center: [parsedLng, parsedLat],
-        zoom: 15,
-        dragPan: true
+        center: [lng, lat], // Format TomTom: [Longitude, Latitude]
+        zoom: 15
       });
 
       map.addControl(new tt.NavigationControl());
 
-      marker = new tt.Marker({draggable: true})
-        .setLngLat([parsedLng, parsedLat])
+      marker = new tt.Marker({ draggable: true })
+        .setLngLat([lng, lat])
         .addTo(map);
 
+      // Update nilai input saat marker digeser
       marker.on('dragend', function() {
         var lngLat = marker.getLngLat();
-        updateInputs(lngLat.lat.toFixed(6), lngLat.lng.toFixed(6));
+        updateInputs(lngLat.lat, lngLat.lng);
       });
 
+      // Update nilai input saat peta diklik
       map.on('click', function(e) {
         var lngLat = e.lngLat;
         marker.setLngLat(lngLat);
-        updateInputs(lngLat.lat.toFixed(6), lngLat.lng.toFixed(6));
+        updateInputs(lngLat.lat, lngLat.lng);
+      });
+
+      // Set nilai awal ke form
+      updateInputs(lat, lng);
+    }
+
+    function updateInputs(lat, lng) {
+      document.getElementById('latitude').value = Number(lat).toFixed(6);
+      document.getElementById('longitude').value = Number(lng).toFixed(6);
+    }
+
+    function simpanAlamat(event) {
+      event.preventDefault();
+
+      var latVal = document.getElementById('latitude').value;
+      var lngVal = document.getElementById('longitude').value;
+      var jalanVal = document.getElementById('nama_jalan').value;
+
+      var payload = {
+        action: "updateProfile",
+        id_user: currentUserId,
+        nama: localStorage.getItem('nama') || "User", // Sesuaikan dengan data sesi user
+        email: localStorage.getItem('email') || "",   // Sesuaikan dengan data sesi user
+        latitude: latVal,
+        longitude: lngVal,
+        nama_jalan: jalanVal
+      };
+
+      // URL Web App Google Apps Script Anda
+      var scriptUrl = "URL_WEB_APP_APPS_SCRIPT_ANDA";
+
+      fetch(scriptUrl, {
+        method: "POST",
+        mode: "no-cors", // Atur sesuai kebutuhan deployment script Anda
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        alert("Alamat berhasil disimpan! Kolom G, H, dan I di Google Sheets telah diperbarui.");
+      })
+      .catch(err => {
+        console.error("Error:", err);
+        alert("Terjadi kesalahan saat menyimpan data.");
       });
     }
-    updateInputs(parsedLat, parsedLng);
-  }
-  function updateInputs(lat, lng) {
-    document.getElementById('latitude').value = lat;
-    document.getElementById('longitude').value = lng;
-  }
-
-  function fetchDataUser(id) {
-    fetch(urlWebApps + "?action=getUserProfile&id_user=" + id)
-      .then(response => response.json())
-      .then(result => {
-        if (result.success && result.data) {
-          var user = result.data;
-          
-          // Pastikan latitude dan longitude ada, tidak null, dan tidak kosong sebelum dipakai
-          if (user.latitude !== null && user.longitude !== null && user.latitude !== "" && user.longitude !== "") {
-            var lat = parseFloat(user.latitude);
-            var lng = parseFloat(user.longitude);
-            
-            // Cek apakah hasil parse benar-benar angka yang valid
-            if (!isNaN(lat) && !isNaN(lng)) {
-              initTomTomMap(lat, lng);
-            }
-          }
-          
-          if (user.nama_jalan) {
-            document.getElementById('nama_jalan').value = user.nama_jalan;
-          }
-        }
-      })
-      .catch(error => console.error("Gagal memuat data user:", error));
-  }
-
-  document.getElementById('addressForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    var btn = document.getElementById('btnSimpan');
-    btn.disabled = true;
-    btn.innerText = "Menyimpan Alamat...";
-
-    var payload = {
-      action: "updateProfile",
-      id_user: idUser,
-      nama: namaUser || "User",
-      email: emailUser || "email@example.com",
-      latitude: document.getElementById('latitude').value,
-      longitude: document.getElementById('longitude').value,
-      nama_jalan: document.getElementById('nama_jalan').value
-    };
-
-    fetch(urlWebApps, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
-    })
-    .then(() => {
-      alert("Alamat berhasil disimpan!");
-      btn.disabled = false;
-      btn.innerText = "Simpan Alamat";
-    })
-    .catch(error => {
-      console.error("Error:", error);
-      alert("Terjadi kesalahan saat menyimpan alamat.");
-      btn.disabled = false;
-      btn.innerText = "Simpan Alamat";
-    });
-  });
-</script>
-
+  </script>
 </body>
 </html>
