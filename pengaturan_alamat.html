@@ -55,21 +55,21 @@
 <!-- JS Leaflet untuk Peta -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // URL Web App Google Apps Script Anda (Ganti dengan URL anda)
+  // URL Web App Google Apps Script Anda (Ganti dengan URL /exec Anda)
   var urlWebApps = "URL_WEB_APP_ANDA_DISINI";
 
-  // Cek Sesi Login (Pastikan saat login sukses, Anda menyimpan id_user, nama, email ke localStorage)
+  // Ambil data sesi dari localStorage
   var idUser = localStorage.getItem('id_user');
   var namaUser = localStorage.getItem('nama');
   var emailUser = localStorage.getItem('email');
 
   var map, marker;
-  var defaultLat = -6.2088; // Default Jakarta jika belum ada data
+  var defaultLat = -6.2088; // Default Jakarta
   var defaultLng = 106.8456;
 
   window.onload = function() {
     if (!idUser) {
-      document.getElementById('infoUserinnerHTML = "<b style='color:red;'>Sesi habis atau Anda belum login. Silakan login terlebih dahulu.</b>";
+      document.getElementById('infoUser').innerHTML = "<b style='color:red;'>Sesi habis atau Anda belum login. Silakan login terlebih dahulu.</b>";
       return;
     }
 
