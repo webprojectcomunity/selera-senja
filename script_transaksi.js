@@ -42,10 +42,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Tampilkan nama jalan ke antarmuka
+    // Periksa ulang dari localStorage jika variabel masih kosong
+    userNamaJalan = localStorage.getItem('nama_jalan') || userNamaJalan;
+    userLatitude = localStorage.getItem('latitude') || userLatitude;
+    userLongitude = localStorage.getItem('longitude') || userLongitude;
+
+    // Tampilkan nama jalan ke antarmuka dengan pengecekan teks yang tangguh
     const jalanElem = document.getElementById('display-nama-jalan');
     if (jalanElem) {
-        jalanElem.innerText = userNamaJalan ? userNamaJalan : "Belum ada patokan/nama jalan yang disimpan.";
+        if (userNamaJalan && userNamaJalan !== "null" && userNamaJalan !== "undefined" && userNamaJalan !== "Alamat belum diatur") {
+            jalanElem.innerText = userNamaJalan;
+        } else {
+            jalanElem.innerText = "Alamat belum diatur. Silakan perbarui profil Anda.";
+        }
     }
 
     // Inisialisasi Peta TomTom Statis (Tanpa interaksi)
