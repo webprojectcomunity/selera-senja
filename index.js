@@ -79,12 +79,11 @@ async function prosesLogin(event) {
 
         const result = await response.json();
 
-        if (result.success) {
-            localStorage.setItem('namaUser', result.user.nama);
-            if (result.user.id_user) {
-                localStorage.setItem('idUser', result.user.id_user);
-            }
-            window.location.replace('landing_page.html');
+     if (result.success) {
+    localStorage.setItem('namaUser', result.user.nama);
+    localStorage.setItem('idUser', result.user.id_user);
+    localStorage.setItem('emailUser', result.user.email); // <--- Tambahkan baris ini
+    window.location.replace('landing_page.html');
         } else {
             alert(result.message);
         }
