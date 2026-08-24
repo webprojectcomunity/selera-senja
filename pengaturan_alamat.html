@@ -14,7 +14,7 @@
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-weight: bold; }
     input[type="text"], textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    #map { height: 300px; width: 100%; margin-bottom: 15px; border-radius: 4px; }
+    #map { height: 300px; width: 100%; margin-bottom: 15px; border-radius: 4px; background: #e9ecef; }
     button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
     button:hover { background: #0056b3; }
     .info-user { background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
@@ -57,20 +57,17 @@
 <!-- JS TomTom Maps SDK -->
 <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
 <script>
-  // URL Web App Google Apps Script
   var urlWebApps = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
-  
-  // TomTom API Key Anda
   var tomtomApiKey = "eEDlFbYFgMqbARs7GYv39ogTM5MzYogE";
 
-  // Ambil data sesi dari localStorage
   var idUser = localStorage.getItem('idUser');
   var namaUser = localStorage.getItem('namaUser');
   var emailUser = localStorage.getItem('emailUser');
 
   var map, marker;
-  var defaultLng = 103.4435; // Karimun, Kepulauan Riau
+  // Koordinat default wilayah Karimun, Kepri (Latitude, Longitude)
   var defaultLat = 0.9103;
+  var defaultLng = 103.4435;
 
   window.onload = function() {
     if (!idUser) {
@@ -79,50 +76,58 @@
     }
 
     document.getElementById('infoUser').innerHTML = "Login sebagai: <b>" + (namaUser || idUser) + "</b> (" + idUser + ")";
+    
+    // Tampilkan form terlebih dahulu agar kontainer #map memiliki dimensi (width/height) yang valid sebelum TomTom merender
     document.getElementById('addressForm').style.display = "block";
 
-    // Inisialisasi Peta TomTom
-    initTomTomMap(defaultLat, defaultLng);
-
-    // Ambil data profil/alamat terbaru dari Google Sheets
-    fetchDataUser(idUser);
+    // Beri jeda sekejap (setTimeout) agar DOM selesai dirender browser sebelum memuat peta (mencegah lag/blank)
+    setTimeout(function() {
+      initTomTomMap(defaultLat, defaultLng);
+      fetchDataUser(idUser);
+    }, 100);
   };
 
   function initTomTomMap(lat, lng) {
+    // Pastikan nilai diconvert ke angka float yang presisi
+    var parsedLat = parseFloat(lat);
+    var parsedLng = parseFloat(lng);
+
+    if (isNaN(parsedLat) || isNaN(parsedLng)) {
+      parsedLat = defaultLat;
+      parsedLng = defaultLng;
+    }
+
     if (map) {
-      map.setCenter([lng, lat]);
-      marker.setLngLat([lng, lat]);
+      // TomTom menggunakan format [Longitude, Latitude]
+      map.setCenter([parsedLng, parsedLat]);
+      marker.setLngLat([parsedLng, parsedLat]);
     } else {
-      // Buat instance peta TomTom
       map = tt.map({
         key: tomtomApiKey,
         container: 'map',
-        center: [lng, lat],
-        zoom: 14
+        center: [parsedLng, parsedLat], // Wajib [Longitude, Latitude]
+        zoom: 15,
+        dragPan: true
       });
 
-      // Tambahkan kontrol navigasi (zoom in/out) standar TomTom
       map.addControl(new tt.NavigationControl());
 
-      // Buat Marker yang bisa digeser (draggable)
       marker = new tt.Marker({draggable: true})
-        .setLngLat([lng, lat])
+        .setLngLat([parsedLng, parsedLat]) // Wajib [Longitude, Latitude]
         .addTo(map);
 
-      // Event ketika marker selesai digeser
       marker.on('dragend', function() {
         var lngLat = marker.getLngLat();
         updateInputs(lngLat.lat.toFixed(6), lngLat.lng.toFixed(6));
       });
 
-      // Event ketika peta diklik untuk memindahkan marker
       map.on('click', function(e) {
         var lngLat = e.lngLat;
         marker.setLngLat(lngLat);
         updateInputs(lngLat.lat.toFixed(6), lngLat.lng.toFixed(6));
       });
     }
-    updateInputs(lat, lng);
+    updateInputs(parsedLat, parsedLng);
   }
 
   function updateInputs(lat, lng) {
@@ -130,7 +135,6 @@
     document.getElementById('longitude').value = lng;
   }
 
-  // Ambil data user dari Spreadsheet via doGet
   function fetchDataUser(id) {
     fetch(urlWebApps + "?action=getUserProfile&id_user=" + id)
       .then(response => response.json())
@@ -139,9 +143,8 @@
           var user = result.data;
           
           if (user.latitude && user.longitude) {
-            var lat = parseFloat(user.latitude);
-            var lng = parseFloat(user.longitude);
-            initTomTomMap(lat, lng);
+            // Perbarui posisi peta jika data tersimpan di database ditemukan
+            initTomTomMap(user.latitude, user.longitude);
           }
           if (user.nama_jalan) {
             document.getElementById('nama_jalan').value = user.nama_jalan;
@@ -151,7 +154,6 @@
       .catch(error => console.error("Gagal memuat data user:", error));
   }
 
-  // Handle Simpan Alamat (Kirim via POST)
   document.getElementById('addressForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
