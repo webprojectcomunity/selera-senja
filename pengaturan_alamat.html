@@ -142,10 +142,17 @@
         if (result.success && result.data) {
           var user = result.data;
           
-          if (user.latitude && user.longitude) {
-            // Perbarui posisi peta jika data tersimpan di database ditemukan
-            initTomTomMap(user.latitude, user.longitude);
+          // Pastikan latitude dan longitude ada, tidak null, dan tidak kosong sebelum dipakai
+          if (user.latitude !== null && user.longitude !== null && user.latitude !== "" && user.longitude !== "") {
+            var lat = parseFloat(user.latitude);
+            var lng = parseFloat(user.longitude);
+            
+            // Cek apakah hasil parse benar-benar angka yang valid
+            if (!isNaN(lat) && !isNaN(lng)) {
+              initTomTomMap(lat, lng);
+            }
           }
+          
           if (user.nama_jalan) {
             document.getElementById('nama_jalan').value = user.nama_jalan;
           }
