@@ -2,67 +2,275 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pengaturan Alamat - TomTom Map</title>
   <!-- TomTom Maps SDK CSS -->
   <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css'>
+  <!-- Google Fonts & Material Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    #map { width: 100%; height: 400px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-weight: bold; margin-bottom: 5px; }
-    input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    .btn-container { display: flex; gap: 10px; margin-bottom: 15px; }
-    button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; color: white; }
-    .btn-save { background: #4CAF50; }
-    .btn-save:hover { background: #45a049; }
-    .btn-locate { background: #0078D7; }
-    .btn-locate:hover { background: #005A9E; }
+    :root {
+      --primary-color: #6200EE;
+      --primary-variant: #3700B3;
+      --secondary-color: #03DAC6;
+      --background-color: #F8F9FA;
+      --surface-color: #FFFFFF;
+      --text-main: #212529;
+      --text-muted: #6C757D;
+      --border-color: #CED4DA;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+    }
+
+    body {
+      background-color: var(--background-color);
+      color: var(--text-main);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px; /* Lebar standar layar HP */
+      background: var(--surface-color);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header ala Android App Bar */
+    .app-bar {
+      background: var(--primary-color);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .app-bar h2 {
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .app-bar .material-icons-round {
+      font-size: 24px;
+    }
+
+    .content-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Wrapper Peta */
+    .map-container {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Floating Action / Hint di atas Peta */
+    .map-hint {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(33, 37, 41, 0.85);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      pointer-events: none;
+      z-index: 5;
+      backdrop-filter: blur(4px);
+      white-space: nowrap;
+    }
+
+    /* Tombol Aksi GPS */
+    .btn-locate {
+      width: 100%;
+      background: #E8F0FE;
+      color: #1A73E8;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-locate:active {
+      background: #D2E3FC;
+    }
+
+    /* Form Fields */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-wrapper .material-icons-round {
+      position: absolute;
+      left: 12px;
+      color: var(--text-muted);
+      font-size: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 12px 12px 42px;
+      background: #F1F3F4;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    input:focus {
+      background: white;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(98, 0, 238, 0.1);
+    }
+
+    input[readonly] {
+      background: #E9ECEF;
+      color: #495057;
+    }
+
+    /* Tombol Simpan Utama */
+    .btn-save {
+      width: 100%;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(98, 0, 238, 0.2);
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 4px;
+    }
+
+    .btn-save:active {
+      transform: scale(0.98);
+      background: var(--primary-variant);
+    }
   </style>
 </head>
 <body>
 
-  <h2>Pengaturan Alamat Pengguna</h2>
-  
-  <!-- Elemen Peta TomTom -->
-  <div id="map"></div>
+  <div class="container">
+    <!-- App Bar -->
+    <div class="app-bar">
+      <span class="material-icons-round">pin_drop</span>
+      <h2>Pengaturan Alamat</h2>
+    </div>
 
-  <div class="btn-container">
-    <button type="button" class="btn-locate" onclick="pusatkanKePosisiGPS()">📍 Pusatkan ke Posisi Saya</button>
+    <div class="content-body">
+      <!-- Peta TomTom -->
+      <div class="map-container">
+        <div id="map"></div>
+        <div class="map-hint">Geser pin atau ketuk peta</div>
+      </div>
+
+      <!-- Tombol GPS -->
+      <button type="button" class="btn-locate" onclick="pusatkanKePosisiGPS()">
+        <span class="material-icons-round" style="font-size: 18px;">my_location</span>
+        Gunakan Lokasi GPS Saya
+      </button>
+
+      <!-- Form Data -->
+      <form id="formAlamat" onsubmit="simpanAlamat(event)">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Latitude (Kolom G)</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round">explore</span>
+            <input type="text" id="latitude" name="latitude" readonly required>
+          </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>Longitude (Kolom H)</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round">explore</span>
+            <input type="text" id="longitude" name="longitude" readonly required>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label>Nama Jalan / Patokan (Kolom I)</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round">edit_location</span>
+            <input type="text" id="nama_jalan" name="nama_jalan" placeholder="Contoh: Jl. Poros, Gang Melati..." required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-save">
+          <span class="material-icons-round" style="font-size: 18px;">save</span>
+          Simpan Alamat
+        </button>
+      </form>
+    </div>
   </div>
-
-  <form id="formAlamat" onsubmit="simpanAlamat(event)">
-    <div class="form-group">
-      <label>Latitude (Kolom G):</label>
-      <input type="text" id="latitude" name="latitude" readonly required>
-    </div>
-    
-    <div class="form-group">
-      <label>Longitude (Kolom H):</label>
-      <input type="text" id="longitude" name="longitude" readonly required>
-    </div>
-
-    <div class="form-group">
-      <label>Nama Jalan / Patokan Alamat Manual (Kolom I):</label>
-      <input type="text" id="nama_jalan" name="nama_jalan" placeholder="Contoh: Jl. Poros, Gang Melati..." required>
-    </div>
-
-    <button type="submit" class="btn-save">Simpan Alamat</button>
-  </form>
 
   <!-- TomTom Maps SDK JS -->
   <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
   <script>
-    // Kunci API TomTom Anda
     var tomtomApiKey = 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
-    
-    // Koordinat default awal (Wilayah Karimun)
     var defaultLat = 0.9103;
     var defaultLng = 103.4435;
 
     var map, marker;
     var currentUserId = localStorage.getItem('id_user') || "USR0001"; 
-
-    // URL Web App Google Apps Script Anda
     var scriptUrl = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -144,7 +352,6 @@
 
     function pindahkanPetaKe(lat, lng) {
       if (map && marker) {
-        // Menggunakan teknik penundaan render frame agar menghindari bentrok worker thread mapbox
         requestAnimationFrame(() => {
           map.setCenter([lng, lat]);
           map.setZoom(16);
@@ -159,7 +366,7 @@
       document.getElementById('longitude').value = Number(lng).toFixed(6);
     }
 
-    function simpanAlamat(event) {
+   function simpanAlamat(event) {
       event.preventDefault();
 
       var latVal = document.getElementById('latitude').value;
@@ -176,18 +383,36 @@
         nama_jalan: jalanVal
       };
 
+      // Indikator loading sederhana pada tombol
+      var btnSubmit = document.querySelector('.btn-save');
+      var originalText = btnSubmit.innerHTML;
+      btnSubmit.innerHTML = '<span class="material-icons-round" style="font-size: 18px; animation: spin 1s infinite;">sync</span> Menyimpan...';
+      btnSubmit.disabled = true;
+
+      // Mengirim menggunakan text/plain agar tembus CORS Google Apps Script tanpa error
       fetch(scriptUrl, {
         method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8",
+        },
         body: JSON.stringify(payload)
       })
-      .then(() => {
-        alert("Alamat berhasil disimpan! Data masuk ke Kolom G, H, dan I di Google Sheets.");
+      .then(response => response.json())
+      .then(result => {
+        btnSubmit.innerHTML = originalText;
+        btnSubmit.disabled = false;
+        
+        if(result.status === "success") {
+          alert("Alamat berhasil disimpan ke Kolom G, H, dan I di Google Sheets!");
+        } else {
+          alert("Gagal menyimpan: " + result.message);
+        }
       })
       .catch(err => {
+        btnSubmit.innerHTML = originalText;
+        btnSubmit.disabled = false;
         console.error("Error:", err);
-        alert("Terjadi kesalahan saat menyimpan data.");
+        alert("Terjadi kesalahan jaringan atau respons server.");
       });
     }
   </script>
