@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaturan Alamat</title>
+  <!-- CSS Leaflet untuk Peta -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f4f4f9; }
+    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; }
+    input[type="text"], textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    #map { height: 300px; width: 100%; margin-bottom: 15px; border-radius: 4px; }
+    button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+    button:hover { background: #0056b3; }
+    .info-user { background: #e9ecef; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Pengaturan Alamat Pengguna</h2>
+  
+  <div class="info-user" id="infoUser">
+    Memuat data sesi user...
+  </div>
+  
+  <form id="addressForm" style="display: none;">
+    <div class="form-group">
+      <label>Cari / Geser Pin pada Peta:</label>
+      <div id="map"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="latitude">Latitude:</label>
+      <input type="text" id="latitude" name="latitude" readonly required>
+    </div>
+
+    <div class="form-group">
+      <label for="longitude">Longitude:</label>
+      <input type="text" id="longitude" name="longitude" readonly required>
+    </div>
+
+    <div class="form-group">
+      <label for="nama_jalan">Nama Jalan / Detail Alamat (Manual):</label>
+      <textarea id="nama_jalan" name="nama_jalan" rows="3" placeholder="Contoh: Jl. Merdeka No. 45, RT 01/RW 02" required></textarea>
+    </div>
+
+    <button type="submit" id="btnSimpan">Simpan Alamat</button>
+  </form>
+</div>
+
+<!-- JS Leaflet untuk Peta -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // URL Web App Google Apps Script Anda (Ganti dengan URL anda)
+  var urlWebApps = "URL_WEB_APP_ANDA_DISINI";
+
+  // Cek Sesi Login (Pastikan saat login sukses, Anda menyimpan id_user, nama, email ke localStorage)
+  var idUser = localStorage.getItem('id_user');
+  var namaUser = localStorage.getItem('nama');
+  var emailUser = localStorage.getItem('email');
+
+  var map, marker;
+  var defaultLat = -6.2088; // Default Jakarta jika belum ada data
+  var defaultLng = 106.8456;
+
+  window.onload = function() {
+    if (!idUser) {
+      document.getElementById('infoUserinnerHTML = "<b style='color:red;'>Sesi habis atau Anda belum login. Silakan login terlebih dahulu.</b>";
+      return;
+    }
+
+    document.getElementById('infoUser').innerHTML = "Login sebagai: <b>" + (namaUser || idUser) + "</b> (" + idUser + ")";
+    document.getElementById('addressForm').style.display = "block";
+
+    // Inisialisasi Peta awal
+    initMap(defaultLat, defaultLng);
+
+    // Ambil data profil/alamat terbaru dari Google Sheets berdasarkan ID User
+    fetchDataUser(idUser);
+  };
+
+  function initMap(lat, lng) {
+    if (map) {
+      map.setView([lat, lng], 15);
+      marker.setLatLng([lat, lng]);
+    } else {
+      map = L.map('map').setView([lat, lng], 15);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+
+      // Event ketika peta diklik
+      map.on('click', function(e) {
+        var latClick = e.latlng.lat.toFixed(6);
+        var lngClick = e.latlng.lng.toFixed(6);
+        marker.setLatLng([latClick, lngClick]);
+        updateInputs(latClick, lngClick);
+      });
+
+      // Event ketika marker digeser
+      marker.on('dragend', function(e) {
+        var pos = marker.getLatLng();
+        var latDrag = pos.lat.toFixed(6);
+        var lngDrag = pos.lng.toFixed(6);
+        updateInputs(latDrag, lngDrag);
+      });
+    }
+    updateInputs(lat, lng);
+  }
+
+  function updateInputs(lat, lng) {
+    document.getElementById('latitude').value = lat;
+    document.getElementById('longitude').value = lng;
+  }
+
+  // Ambil data user dari Spreadsheet via doGet
+  function fetchDataUser(id) {
+    fetch(urlWebApps + "?action=getUserProfile&id_user=" + id)
+      .then(response => response.json())
+      .then(result => {
+        if (result.success && result.data) {
+          var user = result.data;
+          
+          // Jika data alamat sudah ada di database, set ke form & peta
+          if (user.latitude && user.longitude) {
+            var lat = parseFloat(user.latitude);
+            var lng = parseFloat(user.longitude);
+            initMap(lat, lng);
+          }
+          if (user.nama_jalan) {
+            document.getElementById('nama_jalan').value = user.nama_jalan;
+          }
+        }
+      })
+      .catch(error => console.error("Gagal memuat data user:", error));
+  }
+
+  // Handle Simpan Alamat (Kirim via POST)
+  document.getElementById('addressForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    var btn = document.getElementById('btnSimpan');
+    btn.disabled = true;
+    btn.innerText = "Menyimpan Alamat...";
+
+    var payload = {
+      action: "updateProfile",
+      id_user: idUser,
+      nama: namaUser || "User",
+      email: emailUser || "email@example.com",
+      latitude: document.getElementById('latitude').value,
+      longitude: document.getElementById('longitude').value,
+      nama_jalan: document.getElementById('nama_jalan').value
+    };
+
+    fetch(urlWebApps, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      alert("Alamat berhasil disimpan!");
+      btn.disabled = false;
+      btn.innerText = "Simpan Alamat";
+    })
+    .catch(error => {
+      console.error("Error:", error);
+      alert("Terjadi kesalahan saat menyimpan alamat.");
+      btn.disabled = false;
+      btn.innerText = "Simpan Alamat";
+    });
+  });
+</script>
+
+</body>
+</html>
