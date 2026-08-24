@@ -62,22 +62,22 @@
     var map, marker;
     var currentUserId = localStorage.getItem('id_user') || "USR0001"; 
 
-    document.addEventListener("DOMContentLoaded", function() {
-      // Inisialisasi peta langsung menggunakan koordinat default dulu agar style map aman dari error null
-      initMap(defaultLat, defaultLng);
+    // URL Web App Google Apps Script Anda
+    var scriptUrl = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
 
-      // Setelah peta siap, coba ambil posisi GPS pengguna secara otomatis di latar belakang
+    document.addEventListener("DOMContentLoaded", function() {
+      initMap(defaultLat, defaultLng);
       ambilLokasiAwal();
     });
 
     function initMap(lat, lng) {
-      if (map) return; // Jika peta sudah ada, abaikan
+      if (map) return;
 
       try {
         map = tt.map({
           key: tomtomApiKey,
           container: 'map',
-          center: [lng, lat], // Format TomTom: [Longitude, Latitude]
+          center: [lng, lat],
           zoom: 15
         });
 
@@ -87,20 +87,17 @@
           .setLngLat([lng, lat])
           .addTo(map);
 
-        // Update input otomatis saat marker digeser
         marker.on('dragend', function() {
           var lngLat = marker.getLngLat();
           updateInputs(lngLat.lat, lngLat.lng);
         });
 
-        // Update input otomatis saat peta diklik
         map.on('click', function(e) {
           var lngLat = e.lngLat;
           marker.setLngLat(lngLat);
           updateInputs(lngLat.lat, lngLat.lng);
         });
 
-        // Set nilai awal ke form
         updateInputs(lat, lng);
 
       } catch (err) {
@@ -117,14 +114,13 @@
             pindahkanPetaKe(userLat, userLng);
           },
           function(error) {
-            console.warn("GPS timeout/ditolak saat muat awal, tetap menggunakan koordinat default.");
+            console.warn("GPS timeout/ditolak saat muat awal, menggunakan koordinat default.");
           },
           { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
         );
       }
     }
 
-    // Fungsi yang dipanggil saat tombol "Pusatkan ke Posisi Saya" ditekan
     function pusatkanKePosisiGPS() {
       if (!navigator.geolocation) {
         alert("Browser Anda tidak Mendukung Fitur Geolocation.");
@@ -148,10 +144,13 @@
 
     function pindahkanPetaKe(lat, lng) {
       if (map && marker) {
-        map.setCenter([lng, lat]);
-        map.setZoom(16);
-        marker.setLngLat([lng, lat]);
-        updateInputs(lat, lng);
+        // Menggunakan teknik penundaan render frame agar menghindari bentrok worker thread mapbox
+        requestAnimationFrame(() => {
+          map.setCenter([lng, lat]);
+          map.setZoom(16);
+          marker.setLngLat([lng, lat]);
+          updateInputs(lat, lng);
+        });
       }
     }
 
@@ -176,9 +175,6 @@
         longitude: lngVal,
         nama_jalan: jalanVal
       };
-
-      // Ganti dengan URL Web App Google Apps Script Anda (yang berakhiran /exec)
-      var scriptUrl = "URL_WEB_APP_APPS_SCRIPT_ANDA";
 
       fetch(scriptUrl, {
         method: "POST",
