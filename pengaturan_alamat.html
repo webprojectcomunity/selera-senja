@@ -1,432 +1,178 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pengaturan Alamat - TomTom Map</title>
-  <!-- TomTom Maps SDK CSS -->
-  <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css'>
-  <!-- Google Fonts & Material Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-  <style>
-    :root {
-      --primary-color: #6200EE;
-      --primary-variant: #3700B3;
-      --secondary-color: #03DAC6;
-      --background-color: #F8F9FA;
-      --surface-color: #FFFFFF;
-      --text-main: #212529;
-      --text-muted: #6C757D;
-      --border-color: #CED4DA;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan Akun</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: #f4f7f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app-container { width: 100%; max-width: 400px; background-color: #ffffff; min-height: 100vh; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 20px; }
+        .header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
+        .back-btn { text-decoration: none; color: #1a0f08; font-size: 20px; font-weight: bold; }
+        h1 { font-size: 20px; font-weight: 700; color: #1a0f08; }
+        
+        .profile-upload-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
+        .preview-pic { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; background: #ddd; border: 3px solid #ff7b09; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px; }
+        .upload-label { font-size: 13px; color: #3498db; cursor: pointer; font-weight: 600; }
+        .upload-label input { display: none; }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Roboto', sans-serif;
-    }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #333; margin-bottom: 5px; }
+        .form-group input { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 12px; font-size: 14px; outline: none; background: #fafafa; }
+        .form-group input:focus { border-color: #ff7b09; background: #fff; }
 
-    body {
-      background-color: var(--background-color);
-      color: var(--text-main);
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .container {
-      width: 100%;
-      max-width: 480px;
-      background: var(--surface-color);
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .app-bar {
-      background: var(--primary-color);
-      color: white;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .app-bar h2 {
-      font-size: 18px;
-      font-weight: 500;
-    }
-
-    .content-body {
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .map-container {
-      position: relative;
-      width: 100%;
-      height: 260px;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
-    }
-
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-
-    .map-hint {
-      position: absolute;
-      bottom: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(33, 37, 41, 0.85);
-      color: white;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 500;
-      pointer-events: none;
-      z-index: 5;
-      backdrop-filter: blur(4px);
-      white-space: nowrap;
-    }
-
-    .btn-locate {
-      width: 100%;
-      background: #E8F0FE;
-      color: #1A73E8;
-      border: none;
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 14px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .btn-locate:active {
-      background: #D2E3FC;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    label {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .input-wrapper {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .input-wrapper .material-icons-round {
-      position: absolute;
-      left: 12px;
-      color: var(--text-muted);
-      font-size: 20px;
-    }
-
-    input {
-      width: 100%;
-      padding: 12px 12px 12px 42px;
-      background: #F1F3F4;
-      border: 1px solid transparent;
-      border-radius: 8px;
-      font-size: 14px;
-      color: var(--text-main);
-      outline: none;
-      transition: all 0.2s;
-    }
-
-    input:focus {
-      background: white;
-      border-color: var(--primary-color);
-      box-shadow: 0 0 0 3px rgba(98, 0, 238, 0.1);
-    }
-
-    input[readonly] {
-      background: #E9ECEF;
-      color: #495057;
-    }
-
-    .btn-save {
-      width: 100%;
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(98, 0, 238, 0.2);
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 4px;
-    }
-
-    .btn-save:active {
-      transform: scale(0.98);
-      background: var(--primary-variant);
-    }
-  </style>
+        .save-btn { width: 100%; background: #1a0f08; color: #fff; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+        .save-btn:hover { background: #333; }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <div class="app-bar">
-      <span class="material-icons-round">pin_drop</span>
-      <h2>Pengaturan Alamat</h2>
+<div class="app-container">
+    <div class="header">
+        <a href="landing_page.html" class="back-btn">&#8592;</a>
+        <h1>Pengaturan Akun</h1>
     </div>
 
-    <div class="content-body">
-      <div class="map-container">
-        <div id="map"></div>
-        <div class="map-hint">Geser pin atau ketuk peta</div>
-      </div>
-
-      <button type="button" class="btn-locate" onclick="pusatkanKePosisiGPS()">
-        <span class="material-icons-round" style="font-size: 18px;">my_location</span>
-        Gunakan Lokasi GPS Saya
-      </button>
-
-      <form id="formAlamat" onsubmit="simpanAlamat(event)">
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label>Latitude (Kolom G)</label>
-          <div class="input-wrapper">
-            <span class="material-icons-round">explore</span>
-            <input type="text" id="latitude" name="latitude" readonly required>
-          </div>
-        </div>
-        
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label>Longitude (Kolom H)</label>
-          <div class="input-wrapper">
-            <span class="material-icons-round">explore</span>
-            <input type="text" id="longitude" name="longitude" readonly required>
-          </div>
+    <form id="accountForm" onsubmit="updateProfile(event)">
+        <div class="profile-upload-container">
+            <img 
+                id="profilePreview" 
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'%3E%3Ccircle cx='45' cy='45' r='45' fill='%23e5e7eb'/%3E%3Ccircle cx='45' cy='34' r='16' fill='%239ca3af'/%3E%3Cpath d='M15 85c2-19 14-29 30-29s28 10 30 29' fill='%239ca3af'/%3E%3C/svg%3E"
+                alt="Foto Profil" 
+                class="preview-pic"
+            >
+            <label class="upload-label">
+                Ubah Foto Profil
+                <input 
+                    type="file" 
+                    id="fotoInput" 
+                    accept="image/*" 
+                    onchange="previewImage(event)"
+                >
+            </label>
         </div>
 
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label>Nama Jalan / Patokan (Kolom I)</label>
-          <div class="input-wrapper">
-            <span class="material-icons-round">edit_location</span>
-            <input type="text" id="nama_jalan" name="nama_jalan" placeholder="Contoh: Jl. Poros, Gang Melati..." required>
-          </div>
+        <div class="form-group">
+            <label>Nama Lengkap</label>
+            <input type="text" id="nama" required>
         </div>
 
-        <button type="submit" class="btn-save">
-          <span class="material-icons-round" style="font-size: 18px;">save</span>
-          Simpan Alamat
-        </button>
-      </form>
-    </div>
-  </div>
+        <!-- Input Email disembunyikan dari UI, tapi data tetap disimpan di memori untuk kebutuhan backend -->
 
-  <!-- TomTom Maps SDK JS -->
-  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
-  <script>
-    var tomtomApiKey = 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
-    var defaultLat = 0.9103;
-    var defaultLng = 103.4435;
+        <div class="form-group">
+            <label>Nomor HP / WhatsApp</label>
+            <input type="tel" id="no_hp" placeholder="Contoh: 08123456789">
+        </div>
 
-    var map, marker;
-    var currentUserId = localStorage.getItem('id_user') || "USR0001"; 
-    var scriptUrl = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
+        <div class="form-group">
+            <label>Kata Sandi Baru (Opsional)</label>
+            <input type="password" id="password" placeholder="Kosongkan jika tidak diubah">
+        </div>
 
-    document.addEventListener("DOMContentLoaded", function() {
-      initMap(defaultLat, defaultLng);
-      ambilLokasiAwal();
-      
-      // Ambil data profil terbaru dari backend untuk memastikan session/localStorage sinkron
-      muatDataProfilUser();
+        <button type="submit" class="save-btn" id="submitBtn">Simpan Perubahan</button>
+    </form>
+</div>
+
+<script>
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
+    let base64Image = "";
+    let fileNameImg = "";
+    let cachedEmail = ""; // Menyimpan email secara lokal untuk keperluan payload
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const idUser = localStorage.getItem('idUser');
+        if (!idUser) {
+            alert("Silakan login terlebih dahulu!");
+            window.location.replace('index.html');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${APPS_SCRIPT_URL}?action=getUserProfile&id_user=${idUser}`);
+            const result = await response.json();
+
+            if (result.success) {
+                const user = result.data;
+                document.getElementById('nama').value = user.nama || "";
+                document.getElementById('no_hp').value = user.no_hp || "";
+                
+                // Simpan email ke variabel lokal dan localStorage agar validasi Apps Script aman
+                cachedEmail = user.email || localStorage.getItem('emailUser') || "";
+                if (user.email) {
+                    localStorage.setItem('emailUser', user.email);
+                }
+                
+                if (user.foto) {
+                    document.getElementById('profilePreview').src = user.foto;
+                    localStorage.setItem('fotoUser', user.foto);
+                }
+            } else {
+                alert("Gagal memuat profil: " + result.message);
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Terjadi kesalahan koneksi.");
+        }
     });
 
-    function initMap(lat, lng) {
-      if (map) return;
-
-      try {
-        map = tt.map({
-          key: tomtomApiKey,
-          container: 'map',
-          center: [lng, lat],
-          zoom: 15
-        });
-
-        map.addControl(new tt.NavigationControl());
-
-        marker = new tt.Marker({ draggable: true })
-          .setLngLat([lng, lat])
-          .addTo(map);
-
-        marker.on('dragend', function() {
-          var lngLat = marker.getLngLat();
-          updateInputs(lngLat.lat, lngLat.lng);
-        });
-
-        map.on('click', function(e) {
-          var lngLat = e.lngLat;
-          marker.setLngLat(lngLat);
-          updateInputs(lngLat.lat, lngLat.lng);
-        });
-
-        updateInputs(lat, lng);
-
-      } catch (err) {
-        console.error("Gagal memuat peta TomTom:", err);
-      }
-    }
-
-    function muatDataProfilUser() {
-      if (!currentUserId) return;
-      
-      fetch(scriptUrl + "?action=getUserProfile&id_user=" + currentUserId)
-      .then(res => res.json())
-      .then(res => {
-        if (res.success && res.data) {
-          // Simpan ulang ke localStorage agar data nama & email lengkap saat update dikirim
-          if (res.data.nama) localStorage.setItem('nama', res.data.nama);
-          if (res.data.email) localStorage.setItem('email', res.data.email);
-          
-          // Jika di database sudah ada data lat/lng sebelumnya, arahkan peta ke sana
-          if (res.data.latitude && res.data.longitude) {
-            pindahkanPetaKe(parseFloat(res.data.latitude), parseFloat(res.data.longitude));
-          }
-          if (res.data.nama_jalan) {
-            document.getElementById('nama_jalan').value = res.data.nama_jalan;
-          }
+    function previewImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            fileNameImg = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                base64Image = e.target.result;
+                document.getElementById('profilePreview').src = base64Image;
+            };
+            reader.readAsDataURL(file);
         }
-      })
-      .catch(err => console.error("Gagal memuat profil:", err));
     }
 
-    function ambilLokasiAwal() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function(position) {
-            var userLat = position.coords.latitude;
-            var userLng = position.coords.longitude;
-            pindahkanPetaKe(userLat, userLng);
-          },
-          function(error) {
-            console.warn("GPS timeout/ditolak saat muat awal, menggunakan koordinat default.");
-          },
-          { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
-        );
-      }
-    }
+    async function updateProfile(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "Menyimpan...";
+        btn.disabled = true;
 
-    function pusatkanKePosisiGPS() {
-      if (!navigator.geolocation) {
-        alert("Browser Anda tidak Mendukung Fitur Geolocation.");
-        return;
-      }
+        const payload = {
+            action: "updateProfile",
+            id_user: localStorage.getItem('idUser'),
+            nama: document.getElementById('nama').value,
+            email: cachedEmail || localStorage.getItem('emailUser') || "user@placeholder.com", // Otomatis disusulkan di latar belakang
+            no_hp: document.getElementById('no_hp').value,
+            password: document.getElementById('password').value,
+            fotoBase64: base64Image,
+            fotoName: fileNameImg
+        };
 
-      navigator.geolocation.getCurrentPosition(
-        function(position) {
-          var userLat = position.coords.latitude;
-          var userLng = position.coords.longitude;
-          pindahkanPetaKe(userLat, userLng);
-          alert("Berhasil memperbarui posisi ke titik GPS Anda!");
-        },
-        function(error) {
-          alert("Gagal mendeteksi GPS. Pastikan izin lokasi/GPS aktif di perangkat Anda.");
-          console.error(error);
-        },
-        { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
-      );
-    }
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
 
-    function pindahkanPetaKe(lat, lng) {
-      if (map && marker) {
-        requestAnimationFrame(() => {
-          map.setCenter([lng, lat]);
-          map.setZoom(16);
-          marker.setLngLat([lng, lat]);
-          updateInputs(lat, lng);
-        });
-      }
-    }
-
-    function updateInputs(lat, lng) {
-      document.getElementById('latitude').value = Number(lat).toFixed(6);
-      document.getElementById('longitude').value = Number(lng).toFixed(6);
-    }
-
-    function simpanAlamat(event) {
-      event.preventDefault();
-
-      var latVal = document.getElementById('latitude').value;
-      var lngVal = document.getElementById('longitude').value;
-      var jalanVal = document.getElementById('nama_jalan').value;
-
-      var payload = {
-        action: "updateProfile",
-        id_user: currentUserId,
-        nama: localStorage.getItem('nama') || "User Tanpa Nama",
-        email: localStorage.getItem('email') || "user@placeholder.com",
-        no_hp: localStorage.getItem('no_hp') || "",
-        latitude: latVal,
-        longitude: lngVal,
-        nama_jalan: jalanVal
-      };
-
-      var btnSubmit = document.querySelector('.btn-save');
-      var originalText = btnSubmit.innerHTML;
-      btnSubmit.innerHTML = '<span class="material-icons-round" style="font-size: 18px; animation: spin 1s infinite;">sync</span> Menyimpan...';
-      btnSubmit.disabled = true;
-
-      fetch(scriptUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8",
-        },
-        body: JSON.stringify(payload)
-      })
-      .then(response => response.json())
-      .then(result => {
-        btnSubmit.innerHTML = originalText;
-        btnSubmit.disabled = false;
-        
-        // Sesuaikan dengan parameter 'success' dari script Apps Script Anda
-        if (result.success === true) {
-          alert("Alamat berhasil disimpan! Data masuk ke Kolom G, H, dan I di Google Sheets.");
-        } else {
-          alert("Gagal menyimpan: " + (result.message || "Kesalahan tidak diketahui"));
+            if (result.success) {
+                alert("Profil berhasil diperbarui!");
+                localStorage.setItem('namaUser', payload.nama);
+                if (base64Image) {
+                    localStorage.setItem('fotoUser', document.getElementById('profilePreview').src);
+                }
+                window.location.href = "landing_page.html";
+            } else {
+                alert("Gagal memperbarui: " + result.message);
+                btn.innerText = "Simpan Perubahan";
+                btn.disabled = false;
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Kesalahan jaringan.");
+            btn.innerText = "Simpan Perubahan";
+            btn.disabled = false;
         }
-      })
-      .catch(err => {
-        btnSubmit.innerHTML = originalText;
-        btnSubmit.disabled = false;
-        console.error("Error:", err);
-        alert("Terjadi kesalahan jaringan atau respons server.");
-      });
     }
-  </script>
+</script>
+
 </body>
 </html>
