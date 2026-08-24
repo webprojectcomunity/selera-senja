@@ -7,12 +7,16 @@
   <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css'>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
-    #map { width: 100%; height: 400px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    #map { width: 100%; height: 400px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: relative; }
     .form-group { margin-bottom: 12px; }
     label { display: block; font-weight: bold; margin-bottom: 5px; }
     input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    button { background: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-    button:hover { background: #45a049; }
+    .btn-container { display: flex; gap: 10px; margin-bottom: 15px; }
+    button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; color: white; }
+    .btn-save { background: #4CAF50; }
+    .btn-save:hover { background: #45a049; }
+    .btn-locate { background: #0078D7; }
+    .btn-locate:hover { background: #005A9E; }
   </style>
 </head>
 <body>
@@ -21,6 +25,10 @@
   
   <!-- Elemen Peta TomTom -->
   <div id="map"></div>
+
+  <div class="btn-container">
+    <button type="button" class="btn-locate" onclick="pusatkanKePosisiGPS()">📍 Pusatkan ke Posisi Saya</button>
+  </div>
 
   <form id="formAlamat" onsubmit="simpanAlamat(event)">
     <div class="form-group">
@@ -38,7 +46,7 @@
       <input type="text" id="nama_jalan" name="nama_jalan" placeholder="Contoh: Jl. Poros, Gang Melati..." required>
     </div>
 
-    <button type="submit">Simpan Alamat</button>
+    <button type="submit" class="btn-save">Simpan Alamat</button>
   </form>
 
   <!-- TomTom Maps SDK JS -->
@@ -47,44 +55,29 @@
     // Kunci API TomTom Anda
     var tomtomApiKey = 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
     
-    // Koordinat default (Wilayah Karimun) jika GPS tidak aktif/ditolak
+    // Koordinat default awal (Wilayah Karimun)
     var defaultLat = 0.9103;
     var defaultLng = 103.4435;
 
     var map, marker;
-    
-    // Sesuaikan cara Anda mengambil ID User yang sedang login (misal dari localStorage)
     var currentUserId = localStorage.getItem('id_user') || "USR0001"; 
 
     document.addEventListener("DOMContentLoaded", function() {
-      initializeMapAndLocation();
+      // Inisialisasi peta langsung menggunakan koordinat default dulu agar style map aman dari error null
+      initMap(defaultLat, defaultLng);
+
+      // Setelah peta siap, coba ambil posisi GPS pengguna secara otomatis di latar belakang
+      ambilLokasiAwal();
     });
 
-    function initializeMapAndLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          function(position) {
-            var userLat = position.coords.latitude;
-            var userLng = position.coords.longitude;
-            setupMap(userLat, userLng);
-          },
-          function(error) {
-            console.warn("GPS tidak aktif/timeout, menggunakan koordinat default.");
-            setupMap(defaultLat, defaultLng);
-          },
-          { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
-        );
-      } else {
-        setupMap(defaultLat, defaultLng);
-      }
-    }
+    function initMap(lat, lng) {
+      if (map) return; // Jika peta sudah ada, abaikan
 
-    function setupMap(lat, lng) {
       try {
         map = tt.map({
           key: tomtomApiKey,
           container: 'map',
-          center: [lng, lat], // TomTom menggunakan format [Longitude, Latitude]
+          center: [lng, lat], // Format TomTom: [Longitude, Latitude]
           zoom: 15
         });
 
@@ -107,11 +100,58 @@
           updateInputs(lngLat.lat, lngLat.lng);
         });
 
-        // Masukkan nilai awal ke form
+        // Set nilai awal ke form
         updateInputs(lat, lng);
 
       } catch (err) {
         console.error("Gagal memuat peta TomTom:", err);
+      }
+    }
+
+    function ambilLokasiAwal() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          function(position) {
+            var userLat = position.coords.latitude;
+            var userLng = position.coords.longitude;
+            pindahkanPetaKe(userLat, userLng);
+          },
+          function(error) {
+            console.warn("GPS timeout/ditolak saat muat awal, tetap menggunakan koordinat default.");
+          },
+          { timeout: 10000, enableHighAccuracy: true, maximumAge: 0 }
+        );
+      }
+    }
+
+    // Fungsi yang dipanggil saat tombol "Pusatkan ke Posisi Saya" ditekan
+    function pusatkanKePosisiGPS() {
+      if (!navigator.geolocation) {
+        alert("Browser Anda tidak Mendukung Fitur Geolocation.");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          var userLat = position.coords.latitude;
+          var userLng = position.coords.longitude;
+          pindahkanPetaKe(userLat, userLng);
+          alert("Berhasil memperbarui posisi ke titik GPS Anda!");
+        },
+        function(error) {
+          alert("Gagal mendeteksi GPS. Pastikan izin lokasi/GPS aktif di perangkat Anda.");
+          console.error(error);
+        },
+        { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
+      );
+    }
+
+    function pindahkanPetaKe(lat, lng) {
+      if (map && marker) {
+        map.setCenter([lng, lat]);
+        map.setZoom(16);
+        marker.setLngLat([lng, lat]);
+        updateInputs(lat, lng);
       }
     }
 
