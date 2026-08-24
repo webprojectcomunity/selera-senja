@@ -1,13 +1,14 @@
 // --- KONFIGURASI API ---
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
+const PROFILE_API_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 const tomtomApiKey = 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
 
-const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
+const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser'] || '';
 const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('userId') || '';
 let currentCartData = [];
 let totalBayar = 0;
 
-// Variabel untuk menyimpan data alamat yang akan dikirim ke transaksi
+// Variabel untuk menyimpan data alamat default
 let userLatitude = localStorage.getItem('latitude') || '0.9103';
 let userLongitude = localStorage.getItem('longitude') || '103.4435';
 let userNamaJalan = localStorage.getItem('nama_jalan') || 'Alamat belum diatur';
@@ -17,23 +18,23 @@ function formatRupiah(number) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // A. Ambil & Muat Profil User (untuk memastikan alamat & koordinat sinkron)
+    // A. Ambil data profil, koordinat, & alamat terbaru dari API Database Profil
     if (currentUserId) {
         try {
-            const profRes = await fetch(`${APPS_SCRIPT_URL}?action=getUserProfile&id_user=${currentUserId}`);
+            const profRes = await fetch(`${PROFILE_API_URL}?action=getUserProfile&id_user=${currentUserId}`);
             const profResult = await profRes.json();
             if (profResult.success && profResult.data) {
                 if (profResult.data.latitude) userLatitude = profResult.data.latitude;
                 if (profResult.data.longitude) userLongitude = profResult.data.longitude;
                 if (profResult.data.nama_jalan) userNamaJalan = profResult.data.nama_jalan;
                 
-                // Perbarui cache lokal
+                // Simpan ke cache lokal
                 localStorage.setItem('latitude', userLatitude);
                 localStorage.setItem('longitude', userLongitude);
                 localStorage.setItem('nama_jalan', userNamaJalan);
             }
         } catch (e) {
-            console.error("Gagal memuat profil untuk alamat:", e);
+            console.error("Gagal memuat profil alamat dari database:", e);
         }
     }
 
@@ -62,7 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentCartData = [];
     }
 
-    // C. Jika lokal kosong, tarik dari Server Google Apps Script
+    // C. Jika lokal kosong, tarik dari Server Transaksi
     if ((!currentCartData || currentCartData.length === 0) && namaLogIn) {
         const summaryContainer = document.getElementById('summary-items-container');
         if (summaryContainer) {
@@ -120,7 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Fungsi untuk membuat peta statis TomTom (tidak bisa digeser/zoom oleh user)
+// Fungsi untuk membuat peta statis TomTom (tidak bisa digeser/zoom)
 function initStaticMap(lat, lng) {
     try {
         const staticMap = tt.map({
@@ -128,10 +129,9 @@ function initStaticMap(lat, lng) {
             container: 'static-map',
             center: [lng, lat],
             zoom: 15,
-            interactive: false // Menonaktifkan interaksi drag/zoom peta
+            interactive: false 
         });
 
-        // Tambahkan marker diam di lokasi
         new tt.Marker()
             .setLngLat([lng, lat])
             .addTo(staticMap);
@@ -144,7 +144,6 @@ function initStaticMap(lat, lng) {
 function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
 
-    // Tangkap radio button tercentang secara presisi
     const selectedRadio = document.querySelector('input[name="payment_method"]:checked');
     const metodePembayaran = selectedRadio ? selectedRadio.value : 'Tunai';
 
@@ -161,7 +160,6 @@ function prosesPembayaranAkhir() {
     const statusAwal = isTunai ? 'Sedang Dikemas' : 'Belum Bayar';
     const idTransaksi = 'TRX-' + Date.now();
 
-    // Mengirim data alamat (menggantikan catatan) ke payload transaksi backend
     const payload = {
         action: "createTransaction",
         user: namaLogIn,
@@ -174,13 +172,11 @@ function prosesPembayaranAkhir() {
         items: currentCartData
     };
 
-    // Kirim via Hidden Form ke Iframe untuk menghindari kendala CORS pada POST
     const iframeName = 'hidden_iframe_' + Date.now();
     let iframe = document.getElementById(iframeName);
     if (!iframe) {
         iframe = document.createElement('iframe');
         iframe.name = iframeName;
-        iframe.style.id = iframeName;
         iframe.style.display = 'none';
         document.body.appendChild(iframe);
     }
@@ -210,7 +206,6 @@ function prosesPembayaranAkhir() {
 
     localStorage.setItem('last_transaction_id', idTransaksi);
 
-    // Pengalihan Halaman
     setTimeout(() => {
         if (!isTunai) {
             const qrisData = {
