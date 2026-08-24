@@ -38,7 +38,7 @@
 
     .container {
       width: 100%;
-      max-width: 480px; /* Lebar standar layar HP */
+      max-width: 480px;
       background: var(--surface-color);
       border-radius: 16px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -47,7 +47,6 @@
       flex-direction: column;
     }
 
-    /* Header ala Android App Bar */
     .app-bar {
       background: var(--primary-color);
       color: white;
@@ -63,10 +62,6 @@
       font-weight: 500;
     }
 
-    .app-bar .material-icons-round {
-      font-size: 24px;
-    }
-
     .content-body {
       padding: 20px;
       display: flex;
@@ -74,7 +69,6 @@
       gap: 16px;
     }
 
-    /* Wrapper Peta */
     .map-container {
       position: relative;
       width: 100%;
@@ -89,7 +83,6 @@
       height: 100%;
     }
 
-    /* Floating Action / Hint di atas Peta */
     .map-hint {
       position: absolute;
       bottom: 12px;
@@ -107,7 +100,6 @@
       white-space: nowrap;
     }
 
-    /* Tombol Aksi GPS */
     .btn-locate {
       width: 100%;
       background: #E8F0FE;
@@ -129,7 +121,6 @@
       background: #D2E3FC;
     }
 
-    /* Form Fields */
     .form-group {
       display: flex;
       flex-direction: column;
@@ -180,7 +171,6 @@
       color: #495057;
     }
 
-    /* Tombol Simpan Utama */
     .btn-save {
       width: 100%;
       background: var(--primary-color);
@@ -209,26 +199,22 @@
 <body>
 
   <div class="container">
-    <!-- App Bar -->
     <div class="app-bar">
       <span class="material-icons-round">pin_drop</span>
       <h2>Pengaturan Alamat</h2>
     </div>
 
     <div class="content-body">
-      <!-- Peta TomTom -->
       <div class="map-container">
         <div id="map"></div>
         <div class="map-hint">Geser pin atau ketuk peta</div>
       </div>
 
-      <!-- Tombol GPS -->
       <button type="button" class="btn-locate" onclick="pusatkanKePosisiGPS()">
         <span class="material-icons-round" style="font-size: 18px;">my_location</span>
         Gunakan Lokasi GPS Saya
       </button>
 
-      <!-- Form Data -->
       <form id="formAlamat" onsubmit="simpanAlamat(event)">
         <div class="form-group" style="margin-bottom: 12px;">
           <label>Latitude (Kolom G)</label>
@@ -276,6 +262,9 @@
     document.addEventListener("DOMContentLoaded", function() {
       initMap(defaultLat, defaultLng);
       ambilLokasiAwal();
+      
+      // Ambil data profil terbaru dari backend untuk memastikan session/localStorage sinkron
+      muatDataProfilUser();
     });
 
     function initMap(lat, lng) {
@@ -311,6 +300,29 @@
       } catch (err) {
         console.error("Gagal memuat peta TomTom:", err);
       }
+    }
+
+    function muatDataProfilUser() {
+      if (!currentUserId) return;
+      
+      fetch(scriptUrl + "?action=getUserProfile&id_user=" + currentUserId)
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && res.data) {
+          // Simpan ulang ke localStorage agar data nama & email lengkap saat update dikirim
+          if (res.data.nama) localStorage.setItem('nama', res.data.nama);
+          if (res.data.email) localStorage.setItem('email', res.data.email);
+          
+          // Jika di database sudah ada data lat/lng sebelumnya, arahkan peta ke sana
+          if (res.data.latitude && res.data.longitude) {
+            pindahkanPetaKe(parseFloat(res.data.latitude), parseFloat(res.data.longitude));
+          }
+          if (res.data.nama_jalan) {
+            document.getElementById('nama_jalan').value = res.data.nama_jalan;
+          }
+        }
+      })
+      .catch(err => console.error("Gagal memuat profil:", err));
     }
 
     function ambilLokasiAwal() {
@@ -366,7 +378,7 @@
       document.getElementById('longitude').value = Number(lng).toFixed(6);
     }
 
-   function simpanAlamat(event) {
+    function simpanAlamat(event) {
       event.preventDefault();
 
       var latVal = document.getElementById('latitude').value;
@@ -376,20 +388,19 @@
       var payload = {
         action: "updateProfile",
         id_user: currentUserId,
-        nama: localStorage.getItem('nama') || "User",
-        email: localStorage.getItem('email') || "",
+        nama: localStorage.getItem('nama') || "User Tanpa Nama",
+        email: localStorage.getItem('email') || "user@placeholder.com",
+        no_hp: localStorage.getItem('no_hp') || "",
         latitude: latVal,
         longitude: lngVal,
         nama_jalan: jalanVal
       };
 
-      // Indikator loading sederhana pada tombol
       var btnSubmit = document.querySelector('.btn-save');
       var originalText = btnSubmit.innerHTML;
       btnSubmit.innerHTML = '<span class="material-icons-round" style="font-size: 18px; animation: spin 1s infinite;">sync</span> Menyimpan...';
       btnSubmit.disabled = true;
 
-      // Mengirim menggunakan text/plain agar tembus CORS Google Apps Script tanpa error
       fetch(scriptUrl, {
         method: "POST",
         headers: {
@@ -402,10 +413,11 @@
         btnSubmit.innerHTML = originalText;
         btnSubmit.disabled = false;
         
-        if(result.status === "success") {
-          alert("Alamat berhasil disimpan ke Kolom G, H, dan I di Google Sheets!");
+        // Sesuaikan dengan parameter 'success' dari script Apps Script Anda
+        if (result.success === true) {
+          alert("Alamat berhasil disimpan! Data masuk ke Kolom G, H, dan I di Google Sheets.");
         } else {
-          alert("Gagal menyimpan: " + result.message);
+          alert("Gagal menyimpan: " + (result.message || "Kesalahan tidak diketahui"));
         }
       })
       .catch(err => {
