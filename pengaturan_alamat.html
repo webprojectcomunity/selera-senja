@@ -88,24 +88,24 @@
   };
 
   function initTomTomMap(lat, lng) {
-    // Pastikan nilai diconvert ke angka float yang presisi
     var parsedLat = parseFloat(lat);
     var parsedLng = parseFloat(lng);
 
-    if (isNaN(parsedLat) || isNaN(parsedLng)) {
+    // Validasi batas logis koordinat bumi untuk mencegah error SDK TomTom
+    if (isNaN(parsedLat) || isNaN(parsedLng) || parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180) {
+      console.warn("Koordinat tidak valid ditemukan di database, menggunakan default.");
       parsedLat = defaultLat;
       parsedLng = defaultLng;
     }
 
     if (map) {
-      // TomTom menggunakan format [Longitude, Latitude]
       map.setCenter([parsedLng, parsedLat]);
       marker.setLngLat([parsedLng, parsedLat]);
     } else {
       map = tt.map({
         key: tomtomApiKey,
         container: 'map',
-        center: [parsedLng, parsedLat], // Wajib [Longitude, Latitude]
+        center: [parsedLng, parsedLat],
         zoom: 15,
         dragPan: true
       });
@@ -113,7 +113,7 @@
       map.addControl(new tt.NavigationControl());
 
       marker = new tt.Marker({draggable: true})
-        .setLngLat([parsedLng, parsedLat]) // Wajib [Longitude, Latitude]
+        .setLngLat([parsedLng, parsedLat])
         .addTo(map);
 
       marker.on('dragend', function() {
@@ -129,7 +129,6 @@
     }
     updateInputs(parsedLat, parsedLng);
   }
-
   function updateInputs(lat, lng) {
     document.getElementById('latitude').value = lat;
     document.getElementById('longitude').value = lng;
