@@ -6,16 +6,20 @@
   <!-- TomTom Maps SDK CSS -->
   <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css'>
   <style>
-    #map { width: 100%; height: 400px; margin-bottom: 15px; }
-    .form-group { margin-bottom: 10px; }
-    label { display: block; font-weight: bold; }
-    input { width: 100%; padding: 8px; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #map { width: 100%; height: 400px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
+    input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    button { background: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #45a049; }
   </style>
 </head>
 <body>
 
   <h2>Pengaturan Alamat Pengguna</h2>
   
+  <!-- Elemen Peta TomTom -->
   <div id="map"></div>
 
   <form id="formAlamat" onsubmit="simpanAlamat(event)">
@@ -30,8 +34,8 @@
     </div>
 
     <div class="form-group">
-      <label>Nama Jalan / Alamat Manual (Kolom I):</label>
-      <input type="text" id="nama_jalan" name="nama_jalan" placeholder="Masukkan nama jalan atau patokan..." required>
+      <label>Nama Jalan / Patokan Alamat Manual (Kolom I):</label>
+      <input type="text" id="nama_jalan" name="nama_jalan" placeholder="Contoh: Jl. Poros, Gang Melati..." required>
     </div>
 
     <button type="submit">Simpan Alamat</button>
@@ -40,26 +44,23 @@
   <!-- TomTom Maps SDK JS -->
   <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
   <script>
-    // Ganti dengan API Key TomTom Anda
-    var tomtomApiKey = 'MASUKKAN_TOMTOM_API_KEY_ANDA'; 
+    // Kunci API TomTom Anda
+    var tomtomApiKey = 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
     
-    // Default koordinat cadangan (misal: Wilayah Karimun)
+    // Koordinat default (Wilayah Karimun) jika GPS tidak aktif/ditolak
     var defaultLat = 0.9103;
     var defaultLng = 103.4435;
 
     var map, marker;
     
-    // Ambil ID user dari localStorage atau sesi aktif Anda
+    // Sesuaikan cara Anda mengambil ID User yang sedang login (misal dari localStorage)
     var currentUserId = localStorage.getItem('id_user') || "USR0001"; 
 
     document.addEventListener("DOMContentLoaded", function() {
-      // 1. Cek apakah di database (lewat localStorage/API Get) sudah ada data lat/lng sebelumnya
-      // Jika kosong, gunakan Geolocation Browser atau Default Karimun
       initializeMapAndLocation();
     });
 
     function initializeMapAndLocation() {
-      // Coba deteksi lokasi GPS perangkat pengguna secara otomatis
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           function(position) {
@@ -68,10 +69,10 @@
             setupMap(userLat, userLng);
           },
           function(error) {
-            console.warn("Gagal mendeteksi GPS browser, menggunakan koordinat default.");
+            console.warn("GPS tidak aktif/timeout, menggunakan koordinat default.");
             setupMap(defaultLat, defaultLng);
           },
-          { timeout: 10000, enableHighAccuracy: true }
+          { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
         );
       } else {
         setupMap(defaultLat, defaultLng);
@@ -79,34 +80,39 @@
     }
 
     function setupMap(lat, lng) {
-      map = tt.map({
-        key: tomtomApiKey,
-        container: 'map',
-        center: [lng, lat], // Format TomTom: [Longitude, Latitude]
-        zoom: 15
-      });
+      try {
+        map = tt.map({
+          key: tomtomApiKey,
+          container: 'map',
+          center: [lng, lat], // TomTom menggunakan format [Longitude, Latitude]
+          zoom: 15
+        });
 
-      map.addControl(new tt.NavigationControl());
+        map.addControl(new tt.NavigationControl());
 
-      marker = new tt.Marker({ draggable: true })
-        .setLngLat([lng, lat])
-        .addTo(map);
+        marker = new tt.Marker({ draggable: true })
+          .setLngLat([lng, lat])
+          .addTo(map);
 
-      // Update nilai input saat marker digeser
-      marker.on('dragend', function() {
-        var lngLat = marker.getLngLat();
-        updateInputs(lngLat.lat, lngLat.lng);
-      });
+        // Update input otomatis saat marker digeser
+        marker.on('dragend', function() {
+          var lngLat = marker.getLngLat();
+          updateInputs(lngLat.lat, lngLat.lng);
+        });
 
-      // Update nilai input saat peta diklik
-      map.on('click', function(e) {
-        var lngLat = e.lngLat;
-        marker.setLngLat(lngLat);
-        updateInputs(lngLat.lat, lngLat.lng);
-      });
+        // Update input otomatis saat peta diklik
+        map.on('click', function(e) {
+          var lngLat = e.lngLat;
+          marker.setLngLat(lngLat);
+          updateInputs(lngLat.lat, lngLat.lng);
+        });
 
-      // Set nilai awal ke form
-      updateInputs(lat, lng);
+        // Masukkan nilai awal ke form
+        updateInputs(lat, lng);
+
+      } catch (err) {
+        console.error("Gagal memuat peta TomTom:", err);
+      }
     }
 
     function updateInputs(lat, lng) {
@@ -124,24 +130,24 @@
       var payload = {
         action: "updateProfile",
         id_user: currentUserId,
-        nama: localStorage.getItem('nama') || "User", // Sesuaikan dengan data sesi user
-        email: localStorage.getItem('email') || "",   // Sesuaikan dengan data sesi user
+        nama: localStorage.getItem('nama') || "User",
+        email: localStorage.getItem('email') || "",
         latitude: latVal,
         longitude: lngVal,
         nama_jalan: jalanVal
       };
 
-      // URL Web App Google Apps Script Anda
+      // Ganti dengan URL Web App Google Apps Script Anda (yang berakhiran /exec)
       var scriptUrl = "URL_WEB_APP_APPS_SCRIPT_ANDA";
 
       fetch(scriptUrl, {
         method: "POST",
-        mode: "no-cors", // Atur sesuai kebutuhan deployment script Anda
+        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       })
       .then(() => {
-        alert("Alamat berhasil disimpan! Kolom G, H, dan I di Google Sheets telah diperbarui.");
+        alert("Alamat berhasil disimpan! Data masuk ke Kolom G, H, dan I di Google Sheets.");
       })
       .catch(err => {
         console.error("Error:", err);
