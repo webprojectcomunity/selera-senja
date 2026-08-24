@@ -55,8 +55,8 @@
 <!-- JS Leaflet untuk Peta -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // URL Web App Google Apps Script Anda (Ganti dengan URL /exec Anda)
-  var urlWebApps = "URL_WEB_APP_ANDA_DISINI";
+  // URL Web App Google Apps Script
+  var urlWebApps = "https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec";
 
   // Ambil data sesi dari localStorage
   var idUser = localStorage.getItem('id_user');
@@ -64,8 +64,8 @@
   var emailUser = localStorage.getItem('email');
 
   var map, marker;
-  var defaultLat = -6.2088; // Default Jakarta
-  var defaultLng = 106.8456;
+  var defaultLat = 0.9103; // Koordinat wilayah Karimun / Kepulauan Riau sebagai default awal
+  var defaultLng = 103.4435;
 
   window.onload = function() {
     if (!idUser) {
