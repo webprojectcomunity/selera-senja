@@ -4,9 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Konfirmasi Pesanan</title>
+    <!-- TomTom Maps SDK CSS -->
+    <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css'>
     <link rel="stylesheet" href="detail_pesanan.css">
     <link rel="stylesheet" href="transaksi.css">
- 
+    <style>
+        .static-map-box {
+            position: relative;
+            width: 100%;
+            height: 140px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+        }
+        #static-map {
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Mencegah interaksi/geser peta */
+        }
+        .address-text {
+            font-size: 13px;
+            color: #333;
+            font-weight: 500;
+            background: #f8f9fa;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+        }
+    </style>
 </head>
 <body>
 
@@ -29,29 +55,36 @@
             </div>
 
             <!-- Pilihan Metode Pembayaran -->
-<div class="section-box">
-    <h3>Metode Pembayaran</h3>
-    
-    <label class="payment-option" for="pay-tunai" style="display: block; margin-bottom: 10px; cursor: pointer;">
-        <input type="radio" id="pay-tunai" name="payment_method" value="Tunai" checked>
-        <span>Tunai (Cash / Bayar di Tempat) - <em></em></span>
-    </label>
-    
-    <label class="payment-option" for="pay-qris" style="display: block; cursor: pointer;">
-        <input type="radio" id="pay-qris" name="payment_method" value="QRIS">
-        <span>QRIS (Scan & Pay) - <em></em></span>
-    </label>
-</div>
-            <!-- Catatan Transaksi -->
             <div class="section-box">
-                <h3>Catatan Tambahan (Opsional)</h3>
-                <textarea id="catatan-transaksi" placeholder="Contoh: Tolong segera dikirim / catatan khusus..." style="width: 100%; height: 70px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; resize: none;"></textarea>
+                <h3>Metode Pembayaran</h3>
+                
+                <label class="payment-option" for="pay-tunai" style="display: block; margin-bottom: 10px; cursor: pointer;">
+                    <input type="radio" id="pay-tunai" name="payment_method" value="Tunai" checked>
+                    <span>Tunai (Cash / Bayar di Tempat)</span>
+                </label>
+                
+                <label class="payment-option" for="pay-qris" style="display: block; cursor: pointer;">
+                    <input type="radio" id="pay-qris" name="payment_method" value="QRIS">
+                    <span>QRIS (Scan & Pay)</span>
+                </label>
+            </div>
+
+            <!-- Alamat Pengiriman (Pengganti Catatan) -->
+            <div class="section-box">
+                <h3>Alamat Pengiriman</h3>
+                <div class="static-map-box">
+                    <div id="static-map"></div>
+                </div>
+                <div id="display-nama-jalan" class="address-text">Memuat alamat pengiriman...</div>
             </div>
 
             <!-- Tombol Eksekusi -->
             <button type="button" id="btn-proses-bayar" class="btn-proses" onclick="prosesPembayaranAkhir()">Konfirmasi & Bayar Sekarang</button>
         </div>
     </div>
+
+   <!-- TomTom Maps SDK JS -->
+   <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
    <script src="script_transaksi.js"></script>
 </body>
 </html>
