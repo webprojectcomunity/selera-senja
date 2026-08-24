@@ -3,7 +3,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmD
 const PROFILE_API_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 const tomtomApiKey = 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
 
-const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser'] || '';
+const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
 const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('userId') || '';
 let currentCartData = [];
 let totalBayar = 0;
@@ -32,6 +32,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 localStorage.setItem('latitude', userLatitude);
                 localStorage.setItem('longitude', userLongitude);
                 localStorage.setItem('nama_jalan', userNamaJalan);
+                
+                // Simpan juga info tambahan untuk join transaksi jika tersedia
+                if (profResult.data.email) localStorage.setItem('emailUser', profResult.data.email);
+                if (profResult.data.no_hp) localStorage.setItem('noHpUser', profResult.data.no_hp);
             }
         } catch (e) {
             console.error("Gagal memuat profil alamat dari database:", e);
@@ -140,7 +144,7 @@ function initStaticMap(lat, lng) {
     }
 }
 
-// --- FUNGSI PROSES PEMBAYARAN AKHIR ---
+// --- FUNGSI PROSES PEMBAYARAN AKHIR (DENGAN DATA JOIN USER & CHART) ---
 function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
 
@@ -160,53 +164,49 @@ function prosesPembayaranAkhir() {
     const statusAwal = isTunai ? 'Sedang Dikemas' : 'Belum Bayar';
     const idTransaksi = 'TRX-' + Date.now();
 
+    // Data User yang digabungkan (Join data profil lokal & server)
+    const userInfo = {
+        id_user: currentUserId,
+        nama: namaLogIn,
+        email: localStorage.getItem('emailUser') || '',
+        no_hp: localStorage.getItem('noHpUser') || '',
+        latitude: userLatitude,
+        longitude: userLongitude,
+        nama_jalan: userNamaJalan
+    };
+
     const payload = {
         action: "createTransaction",
-        user: namaLogIn,
-        id_user: currentUserId,
+        user_info: userInfo, // Data user hasil "join"
         id_transaksi: idTransaksi,
         total_bayar: totalBayar,
         metode_pembayaran: metodePembayaran,
         status: statusAwal,
         catatan: `Alamat: ${userNamaJalan} (Lat: ${userLatitude}, Lng: ${userLongitude})`, 
-        items: currentCartData
+        items: currentCartData // Data produk / chart yang digabungkan
     };
 
-    const iframeName = 'hidden_iframe_' + Date.now();
-    let iframe = document.getElementById(iframeName);
-    if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.name = iframeName;
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-    }
+    // Kirim menggunakan Fetch API POST langsung ke Apps Script Backend
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8' // Menghindari masalah CORS preflight pada Google Apps Script
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(res => {
+        // Bersihkan keranjang lokal setelah sukses
+        localStorage.removeItem('cart');
+        localStorage.removeItem('keranjang');
+        localStorage.removeItem('cartItems');
+        localStorage.removeItem('spg_cart');
+        localStorage.removeItem('checkout_items');
+        if (namaLogIn) localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
+        if (window.updateCartBadge) window.updateCartBadge();
 
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = APPS_SCRIPT_URL;
-    form.target = iframeName;
+        localStorage.setItem('last_transaction_id', idTransaksi);
 
-    const inputPayload = document.createElement('input');
-    inputPayload.type = 'hidden';
-    inputPayload.name = 'payload';
-    inputPayload.value = JSON.stringify(payload);
-    form.appendChild(inputPayload);
-
-    document.body.appendChild(form);
-    form.submit();
-
-    // Bersihkan LocalStorage keranjang
-    localStorage.removeItem('cart');
-    localStorage.removeItem('keranjang');
-    localStorage.removeItem('cartItems');
-    localStorage.removeItem('spg_cart');
-    localStorage.removeItem('checkout_items');
-    if (namaLogIn) localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
-    if (window.updateCartBadge) window.updateCartBadge();
-
-    localStorage.setItem('last_transaction_id', idTransaksi);
-
-    setTimeout(() => {
         if (!isTunai) {
             const qrisData = {
                 id_transaksi: idTransaksi,
@@ -221,5 +221,13 @@ function prosesPembayaranAkhir() {
             alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
             window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
         }
-    }, 2500);
+    })
+    .catch(err => {
+        console.error("Gagal memproses transaksi:", err);
+        alert("Terjadi kesalahan saat memproses transaksi.");
+        if (btnSubmit) {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = "Proses Pembayaran";
+        }
+    });
 }
