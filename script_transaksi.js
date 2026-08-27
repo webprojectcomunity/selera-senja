@@ -155,19 +155,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Fungsi untuk membuat peta statis TomTom
+// --- FUNGSI PETA STATIS TOMTOM YANG AMAN DARI ERROR ---
 function initStaticMap(lat, lng) {
     try {
+        // 1. Ubah ke tipe angka murni
+        let numLat = parseFloat(lat);
+        let numLng = parseFloat(lng);
+
+        // 2. Cegah koordinat NaN atau kosong
+        if (isNaN(numLat)) numLat = 1.0084;
+        if (isNaN(numLng)) numLng = 103.4435;
+
+        // 3. AUTO-CORRECT: Jika Lattitude di luar rentang -90 s/d 90, 
+        //    artinya nilainya tertukar dengan Longitude dari database/localStorage.
+        if (numLat < -90 || numLat > 90) {
+            let temp = numLat;
+            numLat = numLng;
+            numLng = temp;
+        }
+
+        // 4. Pengaman akhir rentang koordinat global
+        if (numLat < -90) numLat = -90;
+        if (numLat > 90) numLat = 90;
+        if (numLng < -180) numLng = -180;
+        if (numLng > 180) numLng = 180;
+
+        // 5. Render Peta Aman ([Longitude, Latitude])
         const staticMap = tt.map({
             key: tomtomApiKey,
             container: 'static-map',
-            center: [lng, lat], // TomTom urutannya [Longitude, Latitude]
+            center: [numLng, numLat], 
             zoom: 15,
             interactive: false 
         });
 
         new tt.Marker()
-            .setLngLat([lng, lat])
+            .setLngLat([numLng, numLat])
             .addTo(staticMap);
+            
     } catch (err) {
         console.error("Gagal merender peta statis:", err);
     }
