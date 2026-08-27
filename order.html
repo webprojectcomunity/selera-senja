@@ -29,7 +29,7 @@
             text-align: center;
             margin-bottom: 15px;
             color: #2c3e50;
-        }
+        }F
         .order-card {
             background: #fafafa;
             border: 1px solid #e1e8ed;
@@ -164,7 +164,7 @@
             }
         }
 
-        function renderOrders(orders, activeTrxId) {
+      function renderOrders(orders, activeTrxId) {
             const container = document.getElementById('order-container');
             if (!orders || orders.length === 0) {
                 container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Belum ada pesanan yang dibuat.</p>`;
@@ -173,7 +173,10 @@
 
             container.innerHTML = '';
             orders.forEach(order => {
-                const statusClass = (order.status || '').toLowerCase().replace(/\s+/g, '-');
+                // AMAN: Paksa konversi ke string menggunakan String() untuk mencegah error toLowerCase()
+                const rawStatus = order.status !== undefined && order.status !== null ? String(order.status) : 'Pending';
+                const statusClass = rawStatus.toLowerCase().replace(/\s+/g, '-');
+                
                 const isCurrentTrx = activeTrxId && String(order.id_transaksi).trim() === String(activeTrxId).trim();
                 
                 let itemsArray = [];
@@ -204,7 +207,7 @@
                 card.innerHTML = `
                     <div class="order-header">
                         <span class="order-id">${order.id_transaksi || 'TRX-XXXX'}</span>
-                        <span class="order-status ${statusClass}">${order.status || 'Pending'}</span>
+                        <span class="order-status ${statusClass}">${rawStatus}</span>
                     </div>
                     <div class="order-body">
                         <p><strong>Tanggal:</strong> ${order.tanggal ? new Date(order.tanggal).toLocaleString('id-ID') : '-'}</p>
