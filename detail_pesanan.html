@@ -3,28 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Detail Pemesanan</title>
+    <title>Detail Produk - Pesanan</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="detail_pesanan.css">
 </head>
 <body>
     <div class="app-container">
-        <h2 id="nama-produk">Memuat...</h2>
-        
-        <img id="img-produk" src="" alt="Produk">
-        
-        <p id="harga-produk"></p>
-        <p id="total-harga" style="font-weight: bold; color: #e74c3c; margin-top: 5px;"></p>
-        
-        <div class="qty-control">
-            <button onclick="updateQty(-1)">-</button>
-            <span id="qty">1</span>
-            <button onclick="updateQty(1)">+</button>
-        </div>
-        
-        <textarea id="catatan" placeholder="Tambahkan catatan (misal: pedas)"></textarea>
-        
-        <button id="btn-submit-order" onclick="submitOrder()">Tambah ke Keranjang</button>
+        <!-- Navigation Top Bar -->
+        <header class="top-bar">
+            <button class="btn-back" onclick="window.history.back()" aria-label="Kembali">
+                <i data-lucide="arrow-left"></i>
+            </button>
+            <h1 class="page-title">Detail Produk</h1>
+            <div class="spacer"></div>
+        </header>
+
+        <!-- Main Scrollable Content -->
+        <main class="content-body">
+            <!-- Product Image Hero Header -->
+            <div class="image-wrapper">
+                <img id="img-produk" src="" alt="Gambar Produk">
+                <div class="badge-price" id="harga-produk">Rp 0</div>
+            </div>
+
+            <!-- Product Meta Information -->
+            <section class="product-info">
+                <h2 id="nama-produk">Memuat Produk...</h2>
+                <p id="deskripsi-produk" class="deskripsi-text">Silakan tunggu sebentar, sedang mengambil informasi detail menu pilihan Anda.</p>
+            </section>
+
+            <!-- Quantity Selector Section -->
+            <section class="section-card">
+                <label class="section-label">Jumlah Pesanan</label>
+                <div class="qty-control">
+                    <button type="button" class="btn-qty" onclick="updateQty(-1)" aria-label="Kurangi">
+                        <i data-lucide="minus"></i>
+                    </button>
+                    <span id="qty">1</span>
+                    <button type="button" class="btn-qty" onclick="updateQty(1)" aria-label="Tambah">
+                        <i data-lucide="plus"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Order Notes Section -->
+            <section class="section-card">
+                <label for="catatan" class="section-label">
+                    <i data-lucide="edit-3" class="icon-label"></i> Catatan Khusus
+                </label>
+                <textarea id="catatan" placeholder="Contoh: Ekstra pedas, pisahkan saus, atau tanpa bawang..."></textarea>
+            </section>
+        </main>
+
+        <!-- Sticky Bottom Floating Footer -->
+        <footer class="bottom-action-bar">
+            <div class="total-price-group">
+                <span class="total-label">Total Harga</span>
+                <span id="total-harga" class="total-amount">Rp 0</span>
+            </div>
+            <button id="btn-submit-order" onclick="submitOrder()">
+                <i data-lucide="shopping-bag"></i>
+                <span>+ Keranjang</span>
+            </button>
+        </footer>
     </div>
+
     <script src="script_detail.js"></script>
+    <script>
+        // Inisialisasi Ikon Lucide
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+    </script>
 </body>
 </html>
