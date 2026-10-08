@@ -69,14 +69,29 @@
         
         .order-body p {
             font-size: 13px;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
             color: #555;
+            line-height: 1.4;
+        }
+        .user-info-box {
+            background: #f8f9fa;
+            border: 1px dashed #dcdfe6;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+            font-size: 12px;
+        }
+        .user-info-box p {
+            margin-bottom: 3px;
         }
         .item-list {
-            margin-top: 8px;
-            padding-left: 15px;
+            margin-top: 6px;
+            padding-left: 18px;
             font-size: 12px;
-            color: #666;
+            color: #444;
+        }
+        .item-list li {
+            margin-bottom: 4px;
         }
         .nav-btn {
             display: block;
@@ -123,7 +138,7 @@
                 return;
             }
             
-            // PENTING: Bersihkan cache riwayat user lama agar tidak tercampur
+            // Bersihkan cache riwayat user lama agar tidak tercampur
             localStorage.removeItem('user_orders');
             
             loadUserOrders();
@@ -173,12 +188,12 @@
 
             container.innerHTML = '';
             orders.forEach(order => {
-                // AMAN: Paksa konversi ke string menggunakan String() untuk mencegah error toLowerCase()
                 const rawStatus = order.status !== undefined && order.status !== null ? String(order.status) : 'Pending';
                 const statusClass = rawStatus.toLowerCase().replace(/\s+/g, '-');
                 
                 const isCurrentTrx = activeTrxId && String(order.id_transaksi).trim() === String(activeTrxId).trim();
                 
+                // Parse item produk
                 let itemsArray = [];
                 if (Array.isArray(order.items)) {
                     itemsArray = order.items;
@@ -190,17 +205,16 @@
                     }
                 }
 
+                // Render list rincian item
                 let itemsHtml = '';
                 if (itemsArray.length > 0) {
                     itemsHtml = '<ul class="item-list">';
                     itemsArray.forEach(item => {
                         const nama = item.nama_produk || item.nama || 'Produk';
                         const qty = parseInt(item.jumlah || item.qty || 1, 10);
-                        
-                        // Kalkulasi subtotal dengan komprehensif
                         const hargaSatuan = parseFloat(item.harga_satuan || item.harga || 0);
+                        
                         let subtotal = 0;
-
                         if (item.subtotal !== undefined && item.subtotal !== null && item.subtotal !== '') {
                             subtotal = parseFloat(item.subtotal);
                         } else if (item.total_harga !== undefined && item.total_harga !== null && item.total_harga !== '') {
@@ -209,9 +223,16 @@
                             subtotal = hargaSatuan * qty;
                         }
 
-                        itemsHtml += `<li>${nama} (${qty}x) - Rp ${Number(subtotal || 0).toLocaleString('id-ID')}</li>`;
+                        itemsHtml += `
+                            <li>
+                                <strong>${nama}</strong> (${qty}x)
+                                ${hargaSatuan > 0 ? `<br><span style="color:#7f8c8d;">@Rp ${Number(hargaSatuan).toLocaleString('id-ID')}</span>` : ''} 
+                                = <span style="font-weight:600;">Rp ${Number(subtotal || 0).toLocaleString('id-ID')}</span>
+                            </li>`;
                     });
                     itemsHtml += '</ul>';
+                } else {
+                    itemsHtml = '<p style="font-style: italic; color: #95a5a6; font-size: 12px;">Tidak ada rincian item.</p>';
                 }
 
                 const card = document.createElement('div');
@@ -223,11 +244,22 @@
                     </div>
                     <div class="order-body">
                         <p><strong>Tanggal:</strong> ${order.tanggal ? new Date(order.tanggal).toLocaleString('id-ID') : '-'}</p>
+                        
+                        <!-- Informasi Pemesan (Data Sheet Transaksi) -->
+                        <div class="user-info-box">
+                            <p><strong>Pemesan:</strong> ${order.user || order.nama_user || '-'}</p>
+                            ${order.email ? `<p><strong>Email:</strong> ${order.email}</p>` : ''}
+                            ${order.no_hp ? `<p><strong>No. HP:</strong> ${order.no_hp}</p>` : ''}
+                        </div>
+
                         <p><strong>Metode Pembayaran:</strong> ${order.metode_pembayaran || 'Tunai'}</p>
                         <p><strong>Total Bayar:</strong> <span style="color: #27ae60; font-weight: bold;">Rp ${Number(order.total_bayar || 0).toLocaleString('id-ID')}</span></p>
-                        ${order.catatan ? `<p><strong>Catatan:</strong> ${order.catatan}</p>` : ''}
-                        <p style="margin-top: 8px;"><strong>Rincian Item:</strong></p>
-                        ${itemsHtml}
+                        ${order.catatan ? `<p><strong>Catatan / Alamat:</strong> ${order.catatan}</p>` : ''}
+                        
+                        <div style="margin-top: 10px; border-top: 1px dashed #eee; padding-top: 8px;">
+                            <p><strong>Rincian Item:</strong></p>
+                            ${itemsHtml}
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
