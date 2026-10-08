@@ -4,29 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Keranjang Belanja</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="chart.css"> 
-   
 </head>
 <body>
     <div class="app-container">
-        <h2>Keranjang Belanja</h2>
-        <p id="user-display" style="font-size: 14px; color: #7f8c8d; margin-bottom: 20px;"></p>
+        <!-- Top Bar Navigation -->
+        <header class="top-bar">
+            <a href="landing_page.html" class="btn-icon-back" aria-label="Kembali Belanja">
+                <i data-lucide="arrow-left"></i>
+            </a>
+            <div class="header-title">
+                <h2>Keranjang Belanja</h2>
+                <p id="user-display">Memuat data pengguna...</p>
+            </div>
+            <div class="header-spacer"></div>
+        </header>
 
-        <div id="cart-list">
-            <p style="text-align: center; color: #7f8c8d;">Memuat isi keranjang...</p>
-        </div>
+        <!-- Main Content Area -->
+        <main class="content-body">
+            <!-- Cart Item List Container -->
+            <div id="cart-list" class="cart-list">
+                <div class="loading-state">
+                    <i data-lucide="loader-2" class="spin-icon"></i>
+                    <p>Memuat isi keranjang Anda...</p>
+                </div>
+            </div>
+        </main>
 
-        <div class="total-section" id="total-section" style="display: none;">
-            <h3>Total Pembayaran: <span id="grand-total" style="color: #e74c3c;">Rp 0</span></h3>
-        </div>
+        <!-- Bottom Fixed Footer Summary & Action -->
+        <footer class="bottom-checkout-bar">
+            <div class="total-summary" id="total-section" style="display: none;">
+                <div class="total-info">
+                    <span class="total-label">Total Pembayaran</span>
+                    <span id="grand-total" class="total-amount">Rp 0</span>
+                </div>
+            </div>
 
-        <!-- Tombol Aksi Sejajar -->
-        <div class="bottom-actions">
-            <a href="landing_page.html" class="btn-kembali">← Kembali Belanja</a>
-            <button id="btn-checkout" class="btn-lanjutkan-main">Lanjutkan Pembayaran →</button>
-        </div>
-    </div> <!-- Ditambahkan penutup app-container yang sempat hilang -->
+            <!-- Action Buttons -->
+            <div class="bottom-actions">
+                <a href="landing_page.html" class="btn-kembali">
+                    <i data-lucide="shopping-bag"></i>
+                    <span>Tambah Menu</span>
+                </a>
+                <button id="btn-checkout" class="btn-lanjutkan-main">
+                    <span>Checkout</span>
+                    <i data-lucide="arrow-right"></i>
+                </button>
+            </div>
+        </footer>
+    </div>
 
     <script src="script_chart.js"></script>
+    <script>
+        // Inisialisasi Ikon Lucide
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+    </script>
 </body>
 </html>
