@@ -8,7 +8,7 @@ const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('us
 let currentCartData = [];
 let totalBayar = 0;
 
-// Variabel untuk menyimpan data alamat default (Default Tanjung Balai Karimun: Lat: 1.0084, Lng: 103.4435 atau sejenisnya)
+// Variabel untuk menyimpan data alamat default
 let userLatitude = localStorage.getItem('latitude') || '1.0084';
 let userLongitude = localStorage.getItem('longitude') || '103.4435';
 let userNamaJalan = localStorage.getItem('nama_jalan') || 'Alamat belum diatur';
@@ -46,19 +46,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     userLatitude = localStorage.getItem('latitude') || userLatitude;
     userLongitude = localStorage.getItem('longitude') || userLongitude;
 
-    // VALIDASI & KOREKSI KOORDINAT (Mencegah nilai lat/lng tertukar atau di luar rentang -90 / 90)
+    // VALIDASI & KOREKSI KOORDINAT
     let latNum = parseFloat(userLatitude);
     let lngNum = parseFloat(userLongitude);
 
-    // Jika latitude melebihi batas dunia (-90 s/d 90), kemungkinan tertukar dengan longitude
     if (isNaN(latNum) || latNum < -90 || latNum > 90) {
         if (!isNaN(lngNum) && lngNum >= -90 && lngNum <= 90) {
-            // Tukar balik
             let temp = latNum;
             latNum = lngNum;
             lngNum = temp;
         } else {
-            // Fallback default aman (Karimun)
             latNum = 1.0084;
             lngNum = 103.4435;
         }
@@ -77,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Inisialisasi Peta TomTom Statis dengan koordinat yang sudah divalidasi
+    // Inisialisasi Peta TomTom Statis dengan koordinat yang divalidasi
     initStaticMap(userLatitude, userLongitude);
 
     // B. Ambil data keranjang dari localStorage
@@ -125,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // E. Hitung Total Bayar
     totalBayar = 0;
     currentCartData.forEach(item => {
-        const hargaRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : ((item.harga_satuan || item.harga || 0) * (item.jumlah || 1));
+        const hargaRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : ((item.harga_satuan || item.harga || 0) * (item.jumlah || item.qty || 1));
         totalBayar += parseFloat(hargaRaw) || 0;
     });
 
@@ -139,8 +136,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (summaryContainer) {
         summaryContainer.innerHTML = '';
         currentCartData.forEach(item => {
-            const nama = item.nama_produk || 'Produk';
-            const qty = item.jumlah || item.qty || 1;
+            const nama = item.nama_produk || item.nama || 'Produk';
+            const qty = parseInt(item.jumlah || item.qty || 1, 10);
             const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : ((item.harga_satuan || item.harga || 0) * qty);
             
             const itemRow = document.createElement('div');
@@ -154,33 +151,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// Fungsi untuk membuat peta statis TomTom
-// --- FUNGSI PETA STATIS TOMTOM YANG AMAN DARI ERROR ---
+// --- FUNGSI PETA STATIS TOMTOM ---
 function initStaticMap(lat, lng) {
     try {
-        // 1. Ubah ke tipe angka murni
         let numLat = parseFloat(lat);
         let numLng = parseFloat(lng);
 
-        // 2. Cegah koordinat NaN atau kosong
         if (isNaN(numLat)) numLat = 1.0084;
         if (isNaN(numLng)) numLng = 103.4435;
 
-        // 3. AUTO-CORRECT: Jika Lattitude di luar rentang -90 s/d 90, 
-        //    artinya nilainya tertukar dengan Longitude dari database/localStorage.
         if (numLat < -90 || numLat > 90) {
             let temp = numLat;
             numLat = numLng;
             numLng = temp;
         }
 
-        // 4. Pengaman akhir rentang koordinat global
         if (numLat < -90) numLat = -90;
         if (numLat > 90) numLat = 90;
         if (numLng < -180) numLng = -180;
         if (numLng > 180) numLng = 180;
 
-        // 5. Render Peta Aman ([Longitude, Latitude])
         const staticMap = tt.map({
             key: tomtomApiKey,
             container: 'static-map',
@@ -228,6 +218,21 @@ function prosesPembayaranAkhir() {
         nama_jalan: userNamaJalan
     };
 
+    // PERBAIKAN: Standarisasi format item sebelum dikirim ke backend
+    const formattedItems = currentCartData.map(item => {
+        const qty = parseInt(item.jumlah || item.qty || 1, 10);
+        const harga = parseFloat(item.harga_satuan || item.harga || 0);
+        const total = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : (harga * qty);
+
+        return {
+            id_produk: item.id_produk || '',
+            nama_produk: item.nama_produk || item.nama || 'Produk',
+            jumlah: qty,
+            harga_satuan: harga,
+            subtotal: total
+        };
+    });
+
     const payload = {
         action: "createTransaction",
         user_info: userInfo,
@@ -236,22 +241,18 @@ function prosesPembayaranAkhir() {
         metode_pembayaran: metodePembayaran,
         status: statusAwal,
         catatan: `Alamat: ${userNamaJalan} (Lat: ${userLatitude}, Lng: ${userLongitude})`, 
-        items: currentCartData
+        items: formattedItems
     };
 
-    // SOLUSI CORS FETCH: Gunakan mode 'no-cors' atau kirim sebagai text/plain dengan penanganan response yang aman, 
-    // Atau ubah Google Apps Script menjadi POST handler yang mengembalikan respons standar.
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors', // <-- Ditambahkan untuk mengatasi error CORS langsung dari browser ke Apps Script
+        mode: 'no-cors',
         headers: {
             'Content-Type': 'text/plain;charset=utf-8'
         },
         body: JSON.stringify(payload)
     })
     .then(() => {
-        // Karena mode 'no-cors' membuat response menjadi opaque (tidak bisa dibaca .json()), 
-        // kita asumsikan permintaan berhasil terkirim ke server Apps Script.
         localStorage.removeItem('cart');
         localStorage.removeItem('keranjang');
         localStorage.removeItem('cartItems');
