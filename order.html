@@ -29,7 +29,7 @@
             text-align: center;
             margin-bottom: 15px;
             color: #2c3e50;
-        }F
+        }
         .order-card {
             background: #fafafa;
             border: 1px solid #e1e8ed;
@@ -164,7 +164,7 @@
             }
         }
 
-      function renderOrders(orders, activeTrxId) {
+        function renderOrders(orders, activeTrxId) {
             const container = document.getElementById('order-container');
             if (!orders || orders.length === 0) {
                 container.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Belum ada pesanan yang dibuat.</p>`;
@@ -195,8 +195,20 @@
                     itemsHtml = '<ul class="item-list">';
                     itemsArray.forEach(item => {
                         const nama = item.nama_produk || item.nama || 'Produk';
-                        const qty = item.jumlah || item.qty || 1;
-                        const subtotal = item.subtotal || item.total_harga || ((item.harga_satuan || item.harga || 0) * qty);
+                        const qty = parseInt(item.jumlah || item.qty || 1, 10);
+                        
+                        // Kalkulasi subtotal dengan komprehensif
+                        const hargaSatuan = parseFloat(item.harga_satuan || item.harga || 0);
+                        let subtotal = 0;
+
+                        if (item.subtotal !== undefined && item.subtotal !== null && item.subtotal !== '') {
+                            subtotal = parseFloat(item.subtotal);
+                        } else if (item.total_harga !== undefined && item.total_harga !== null && item.total_harga !== '') {
+                            subtotal = parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, ''));
+                        } else {
+                            subtotal = hargaSatuan * qty;
+                        }
+
                         itemsHtml += `<li>${nama} (${qty}x) - Rp ${Number(subtotal || 0).toLocaleString('id-ID')}</li>`;
                     });
                     itemsHtml += '</ul>';
