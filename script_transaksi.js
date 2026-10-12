@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         totalBayarElem.innerText = formatRupiah(totalBayar);
     }
 
-    // F. Render ringkasan item
+    // F. Render ringkasan item (Menampilkan Nama Saja & Gambar Produk)
     const summaryContainer = document.getElementById('summary-items-container');
     if (summaryContainer) {
         summaryContainer.innerHTML = '';
@@ -142,13 +142,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nama = item.nama_produk || item.nama || 'Produk';
             const qty = parseInt(item.jumlah || item.qty || 1, 10);
             const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : ((item.harga_satuan || item.harga || 0) * qty);
+            const gambarProduk = item.gambar && item.gambar !== "" ? item.gambar : "https://via.placeholder.com/60?text=Menu";
             
             const itemRow = document.createElement('div');
-            itemRow.className = "flex justify-between items-center text-xs text-slate-700 py-1";
-            itemRow.style.cssText = "display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #555;";
+            itemRow.className = "flex items-center justify-between text-xs text-slate-700 py-2 border-b border-slate-100 last:border-none";
+            itemRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #eee; color: #555;";
             itemRow.innerHTML = `
-                <span>${nama} (${qty}x)</span>
-                <span>${formatRupiah(subtotal)}</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${gambarProduk}" alt="${nama}" onerror="this.src='https://via.placeholder.com/60?text=Menu';" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
+                    <div>
+                        <span style="font-weight: 600; color: #0f172a; display: block;">${nama}</span>
+                        <span style="font-size: 11px; color: #64748b;">Jumlah: ${qty}x</span>
+                    </div>
+                </div>
+                <span style="font-weight: 600; color: #10b981;">${formatRupiah(subtotal)}</span>
             `;
             summaryContainer.appendChild(itemRow);
         });
@@ -158,23 +165,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 // --- FUNGSI PETA STATIS TOMTOM YANG AMAN DARI ERROR & DIOPTIMALKAN ---
 function initStaticMap(lat, lng) {
     try {
-        // 1. Ubah ke tipe angka murni
         let numLat = parseFloat(lat);
         let numLng = parseFloat(lng);
 
-        // 2. Cegah koordinat NaN atau kosong
         if (isNaN(numLat)) numLat = 1.0084;
         if (isNaN(numLng)) numLng = 103.4435;
 
-        // 3. AUTO-CORRECT: Jika Latitude di luar rentang -90 s/d 90, 
-        //    artinya nilainya tertukar dengan Longitude dari database/localStorage.
         if (numLat < -90 || numLat > 90) {
             let temp = numLat;
             numLat = numLng;
             numLng = temp;
         }
 
-        // 4. Pengaman akhir rentang koordinat global
         if (numLat < -90) numLat = -90;
         if (numLat > 90) numLat = 90;
         if (numLng < -180) numLng = -180;
@@ -184,7 +186,6 @@ function initStaticMap(lat, lng) {
         if (!mapContainer) return;
         mapContainer.innerHTML = '';
 
-        // 5. Render Peta Aman ([Longitude, Latitude])
         const staticMap = tt.map({
             key: tomtomApiKey,
             container: 'static-map',
@@ -199,7 +200,6 @@ function initStaticMap(lat, lng) {
             .setLngLat([numLng, numLat])
             .addTo(staticMap);
 
-        // Trigger resize untuk menjamin peta tidak terpotong saat dirender browser
         setTimeout(() => {
             staticMap.resize();
         }, 300);
@@ -239,7 +239,6 @@ function prosesPembayaranAkhir() {
         nama_jalan: userNamaJalan
     };
 
-    // Formating items secara konsisten
     const formattedItems = currentCartData.map(item => {
         const qty = parseInt(item.jumlah || item.qty || 1, 10);
         const harga = parseFloat(item.harga_satuan || item.harga || 0);
@@ -250,7 +249,8 @@ function prosesPembayaranAkhir() {
             nama_produk: item.nama_produk || item.nama || 'Produk',
             jumlah: qty,
             harga_satuan: harga,
-            subtotal: total
+            subtotal: total,
+            gambar: item.gambar || ''
         };
     });
 
@@ -265,18 +265,15 @@ function prosesPembayaranAkhir() {
         items: formattedItems
     };
 
-    // SOLUSI CORS FETCH: Gunakan mode 'no-cors' atau kirim sebagai text/plain dengan penanganan response yang aman
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors', // <-- Ditambahkan untuk mengatasi error CORS langsung dari browser ke Apps Script
+        mode: 'no-cors',
         headers: {
             'Content-Type': 'text/plain;charset=utf-8'
         },
         body: JSON.stringify(payload)
     })
     .then(() => {
-        // Karena mode 'no-cors' membuat response menjadi opaque (tidak bisa dibaca .json()), 
-        // kita asumsikan permintaan berhasil terkirim ke server Apps Script.
         localStorage.removeItem('cart');
         localStorage.removeItem('keranjang');
         localStorage.removeItem('cartItems');
