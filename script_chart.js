@@ -1,321 +1,244 @@
-// --- KONFIGURASI API (Aman dari Identifier Redeclaration Error) ---
-var APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
-var PROFILE_API_URL = window.PROFILE_API_URL || 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
-var tomtomApiKey = window.tomtomApiKey || 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
+// --- KONFIGURASI API ---
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
 
-const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
-const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('userId') || '';
-let currentCartData = [];
-let totalBayar = 0;
+const namaLogIn = localStorage.getItem('namaUser');
+const cacheKey = `cart_cache_${namaLogIn ? namaLogIn.trim() : 'guest'}`;
 
-// Variabel untuk menyimpan data alamat default (Default Tanjung Balai Karimun: Lat: 1.0084, Lng: 103.4435 atau sejenisnya)
-let userLatitude = localStorage.getItem('latitude') || '1.0084';
-let userLongitude = localStorage.getItem('longitude') || '103.4435';
-let userNamaJalan = localStorage.getItem('nama_jalan') || 'Alamat belum diatur';
+// Variabel global untuk menampung data keranjang aktif
+let currentCartItems = [];
 
-function formatRupiah(number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // A. Ambil data profil, koordinat, & alamat terbaru dari API Database Profil
-    if (currentUserId) {
-        try {
-            const profRes = await fetch(`${PROFILE_API_URL}?action=getUserProfile&id_user=${currentUserId}`);
-            const profResult = await profRes.json();
-            if (profResult.success && profResult.data) {
-                if (profResult.data.latitude) userLatitude = profResult.data.latitude;
-                if (profResult.data.longitude) userLongitude = profResult.data.longitude;
-                if (profResult.data.nama_jalan) userNamaJalan = profResult.data.nama_jalan;
-                
-                // Simpan ke cache lokal
-                localStorage.setItem('latitude', userLatitude);
-                localStorage.setItem('longitude', userLongitude);
-                localStorage.setItem('nama_jalan', userNamaJalan);
-                
-                if (profResult.data.email) localStorage.setItem('emailUser', profResult.data.email);
-                if (profResult.data.no_hp) localStorage.setItem('noHpUser', profResult.data.no_hp);
-            }
-        } catch (e) {
-            console.error("Gagal memuat profil alamat dari database:", e);
-        }
-    }
-
-    // Periksa ulang dari localStorage jika variabel masih kosong
-    userNamaJalan = localStorage.getItem('nama_jalan') || userNamaJalan;
-    userLatitude = localStorage.getItem('latitude') || userLatitude;
-    userLongitude = localStorage.getItem('longitude') || userLongitude;
-
-    // VALIDASI & KOREKSI KOORDINAT (Mencegah nilai lat/lng tertukar atau di luar rentang -90 / 90)
-    let latNum = parseFloat(userLatitude);
-    let lngNum = parseFloat(userLongitude);
-
-    // Jika latitude melebihi batas dunia (-90 s/d 90), kemungkinan tertukar dengan longitude
-    if (isNaN(latNum) || latNum < -90 || latNum > 90) {
-        if (!isNaN(lngNum) && lngNum >= -90 && lngNum <= 90) {
-            // Tukar balik
-            let temp = latNum;
-            latNum = lngNum;
-            lngNum = temp;
-        } else {
-            // Fallback default aman (Karimun)
-            latNum = 1.0084;
-            lngNum = 103.4435;
-        }
-    }
-    
-    userLatitude = latNum;
-    userLongitude = lngNum;
-
-    // Tampilkan nama jalan ke antarmuka
-    const jalanElem = document.getElementById('display-nama-jalan');
-    if (jalanElem) {
-        if (userNamaJalan && userNamaJalan !== "null" && userNamaJalan !== "undefined" && userNamaJalan !== "Alamat belum diatur") {
-on under thecovers fast forward toit seem we were more thanlove andsort ofyet we hadall we needmamaholdineach other and takehim back to two thousand twodads andalmoststaywhere we saysongs withfriends andso thereprogram below
-        } else {
-            jalanElem.innerText = "Alamat belum diatur. Silakan perbarui profil Anda.";
-        }
-    }
-
-    // Inisialisasi Peta TomTom Statis dengan koordinat yang sudah divalidasi
-    initStaticMap(userLatitude, userLongitude);
-
-    // B. Ambil data keranjang dari localStorage
-    const specificCacheKey = namaLogIn ? `cart_cache_${namaLogIn.trim()}` : '';
-    const rawCartData = 
-        localStorage.getItem('checkout_items') || 
-        (specificCacheKey ? localStorage.getItem(specificCacheKey) : null) || 
-        localStorage.getItem('cart') || 
-        localStorage.getItem('keranjang') || 
-        localStorage.getItem('cartItems') || 
-        localStorage.getItem('spg_cart') || '[]';
-
-    try {
-        currentCartData = JSON.parse(rawCartData);
-    } catch (e) {
-        currentCartData = [];
-    }
-
-    // C. Jika lokal kosong, tarik dari Server Transaksi
-    if ((!currentCartData || currentCartData.length === 0) && namaLogIn) {
-        const summaryContainer = document.getElementById('summary-items-container');
-        if (summaryContainer) {
-            summaryContainer.innerHTML = `<p style="text-align: center; color: #7f8c8d; font-size: 13px;">Memuat rincian pesanan dari server...</p>`;
-        }
-
-        try {
-            const response = await fetch(`${APPS_SCRIPT_URL}?action=getCart&user=${encodeURIComponent(namaLogIn.trim())}`);
-            const result = await response.json();
-            if (result && result.success && Array.isArray(result.data)) {
-                currentCartData = result.data;
-                localStorage.setItem('checkout_items', JSON.stringify(currentCartData));
-            }
-        } catch (err) {
-            console.error("Gagal mengambil data keranjang dari server:", err);
-        }
-    }
-
-    // D. Validasi keranjang
-    if (!currentCartData || currentCartData.length === 0) {
-        alert("Tidak ada data produk yang akan di-checkout atau keranjang kosong.");
-        window.location.replace('chart.html');
+document.addEventListener('DOMContentLoaded', () => {
+    // Sesi Proteksi
+    if (!namaLogIn) {
+        alert("Sesi berakhir, silakan login kembali.");
+        window.location.replace('index.html');
         return;
     }
 
-    // E. Hitung Total Bayar
-    totalBayar = 0;
-    currentCartData.forEach(item => {
-        const hargaRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : ((item.harga_satuan || item.harga || 0) * (item.jumlah || item.qty || 1));
-        totalBayar += parseFloat(hargaRaw) || 0;
-    });
-
-    const totalBayarElem = document.getElementById('element-total-bayar');
-    if (totalBayarElem) {
-        totalBayarElem.innerText = formatRupiah(totalBayar);
+    const userDisplay = document.getElementById('user-display');
+    if (userDisplay) {
+        userDisplay.innerText = "Pengguna: " + namaLogIn;
     }
 
-    // F. Render ringkasan item (Menampilkan Nama Saja & Gambar Pendukung)
-    const summaryContainer = document.getElementById('summary-items-container');
-    if (summaryContainer) {
-        summaryContainer.innerHTML = '';
-        currentCartData.forEach(item => {
-            const nama = item.nama_produk || item.nama || 'Produk';
-            const qty = parseInt(item.jumlah || item.qty || 1, 10);
-            const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : ((item.harga_satuan || item.harga || 0) * qty);
-            const gambarProduk = item.gambar && item.gambar !== "" ? item.gambar : "https://via.placeholder.com/60?text=Menu";
-            
-            const itemRow = document.createElement('div');
-            itemRow.className = "flex items-center justify-between text-xs text-slate-700 py-2 border-b border-slate-100 last:border-none";
-            itemRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #eee; color: #555;";
-            itemRow.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="${gambarProduk}" alt="${nama}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
-                    <div>
-                        <span style="font-weight: 600; color: #0f172a; display: block;">${nama}</span>
-                        <span style="font-size: 11px; color: #64748b;">Jumlah: ${qty}x</span>
-                    </div>
-                </div>
-                <span style="font-weight: 600; color: #10b981;">${formatRupiah(subtotal)}</span>
-            `;
-            summaryContainer.appendChild(itemRow);
-        });
+    // Pasang Event Listener langsung ke tombol Checkout (#btn-checkout)
+    const btnCheckout = document.getElementById('btn-checkout');
+    if (btnCheckout) {
+        btnCheckout.addEventListener('click', prosesSemuaTransaksi);
     }
+
+    // Muat data keranjang secara instan dari cache lokal, lalu sinkronkan dari server
+    loadCartInstantly();
 });
 
-// --- FUNGSI PETA STATIS TOMTOM YANG AMAN DARI ERROR & DIOPTIMALKAN ---
-function initStaticMap(lat, lng) {
-    try {
-        // 1. Ubah ke tipe angka murni
-        let numLat = parseFloat(lat);
-        let numLng = parseFloat(lng);
+// --- FUNGSI AMBIL DATA INSTAN (CACHE + BACKGROUND SYNC) ---
+function loadCartInstantly() {
+    const cartList = document.getElementById('cart-list');
+    if (!cartList) return;
 
-        // 2. Cegah koordinat NaN atau kosong
-        if (isNaN(numLat)) numLat = 1.0084;
-        if (isNaN(numLng)) numLng = 103.4435;
-
-        // 3. AUTO-CORRECT: Jika Latitude di luar rentang -90 s/d 90, 
-        //    artinya nilainya tertukar dengan Longitude dari database/localStorage.
-        if (numLat < -90 || numLat > 90) {
-            let temp = numLat;
-            numLat = numLng;
-            numLng = temp;
+    // 1. Coba baca dari cache lokal terlebih dahulu agar halaman terbuka tanpa jeda
+    const savedCache = localStorage.getItem(cacheKey);
+    if (savedCache) {
+        try {
+            currentCartItems = JSON.parse(savedCache);
+            renderCartItems(currentCartItems);
+        } catch (e) {
+            currentCartItems = [];
         }
+    }
 
-        // 4. Pengaman akhir rentang koordinat global
-        if (numLat < -90) numLat = -90;
-        if (numLat > 90) numLat = 90;
-        if (numLng < -180) numLng = -180;
-        if (numLng > 180) numLng = 180;
+    // Jika cache masih kosong sama sekali, tampilkan teks memuat sementara
+    if (currentCartItems.length === 0) {
+        cartList.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Memuat keranjang...</p>`;
+    }
 
-        const mapContainer = document.getElementById('static-map');
-        if (!mapContainer) return;
-        mapContainer.innerHTML = '';
+    // 2. Tarik data terbaru dari server Google di latar belakang via Fetch API Standar
+    fetchCartFromServer();
+}
 
-        // 5. Render Peta Aman ([Longitude, Latitude])
-        const staticMap = tt.map({
-            key: tomtomApiKey,
-            container: 'static-map',
-            center: [numLng, numLat], 
-            zoom: 15,
-            interactive: false,
-            dragPan: false,
-            scrollZoom: false
+// --- FUNGSI AMBIL DATA DARI SERVER MENGGUNAKAN FETCH STANDAR ---
+async function fetchCartFromServer() {
+    const url = `${APPS_SCRIPT_URL}?action=getCart&user=${encodeURIComponent(namaLogIn.trim())}`;
+    
+    console.log("Memanggil API Fetch:", url);
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Accept': 'application/json' }
         });
 
-        new tt.Marker({ color: '#ef4444' })
-            .setLngLat([numLng, numLat])
-            .addTo(staticMap);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-        // Trigger resize untuk menjamin peta tidak terpotong saat dirender browser
-        setTimeout(() => {
-            staticMap.resize();
-        }, 300);
-            
-    } catch (err) {
-        console.error("Gagal merender peta statis:", err);
+        const chartResult = await response.json();
+
+        // Validasi response
+        if (!chartResult || chartResult.success !== true || !Array.isArray(chartResult.data)) {
+            console.error("FORMAT DATA SERVER TIDAK VALID:", chartResult);
+            handleFetchError();
+            return;
+        }
+
+        // Data valid
+        currentCartItems = chartResult.data;
+        console.log("Keranjang berhasil dimuat:", currentCartItems);
+
+        // Simpan cache
+        localStorage.setItem(cacheKey, JSON.stringify(currentCartItems));
+
+        // Render data
+        renderCartItems(currentCartItems);
+
+    } catch (error) {
+        console.error("GAGAL SINKRONISASI KERANJANG VIA FETCH:", error);
+        handleFetchError();
     }
 }
 
-// --- FUNGSI PROSES PEMBAYARAN AKHIR ---
-function prosesPembayaranAkhir() {
-    const btnSubmit = document.getElementById('btn-proses-bayar');
+// --- FUNGSI PENANGANAN GAGAL AMBIL DATA ---
+function handleFetchError() {
+    const cartList = document.getElementById('cart-list');
+    const totalSection = document.getElementById('total-section');
+    const btnCheckout = document.getElementById('btn-checkout');
 
-    const selectedRadio = document.querySelector('input[name="payment_method"]:checked');
-    const metodePembayaran = selectedRadio ? selectedRadio.value : 'Tunai';
+    if (currentCartItems.length === 0 && cartList) {
+        cartList.innerHTML = `<p style="text-align: center; color: #e74c3c;">Gagal memuat data keranjang.</p>`;
+        if (totalSection) totalSection.style.display = 'none';
+        if (btnCheckout) btnCheckout.disabled = true;
+    }
+}
 
-    if (!confirm(`Konfirmasi pemesanan sebesar ${formatRupiah(totalBayar)} dengan metode ${metodePembayaran}?`)) {
+// --- FUNGSI RENDER TAMPILAN KERANJANG (DENGAN GAMBAR & TANPA ID PRODUK DI NAMA) ---
+function renderCartItems(items) {
+    const cartList = document.getElementById('cart-list');
+    const totalSection = document.getElementById('total-section');
+    const btnCheckout = document.getElementById('btn-checkout');
+
+    if (!cartList) return;
+
+    if (!Array.isArray(items) || items.length === 0) {
+        cartList.innerHTML = `<p style="text-align: center; color: #7f8c8d;">Keranjang Anda kosong.</p>`;
+        currentCartItems = [];
+        if (totalSection) totalSection.style.display = 'none';
+        if (btnCheckout) btnCheckout.disabled = true;
         return;
     }
 
-    if (btnSubmit) {
-        btnSubmit.disabled = true;
-        btnSubmit.innerText = "Memproses Pesanan...";
-    }
+    if (btnCheckout) btnCheckout.disabled = false;
+    cartList.innerHTML = ''; 
+    let grandTotal = 0;
 
-    const isTunai = metodePembayaran.toLowerCase() === 'tunai';
-    const statusAwal = isTunai ? 'Sedang Dikemas' : 'Belum Bayar';
-    const idTransaksi = 'TRX-' + Date.now();
+    items.forEach((item) => {
+        const hargaRaw = item.harga_satuan ? item.harga_satuan.toString().replace(/[^0-9.-]/g, '') : '0';
+        const totalRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : '0';
 
-    const userInfo = {
-        id_user: currentUserId,
-        nama: namaLogIn,
-        email: localStorage.getItem('emailUser') || '',
-        no_hp: localStorage.getItem('noHpUser') || '',
-        latitude: userLatitude,
-        longitude: userLongitude,
-        nama_jalan: userNamaJalan
-    };
+        const harga = parseFloat(hargaRaw) || 0;
+        const jumlah = parseInt(item.jumlah) || 0;
+        const totalItem = parseFloat(totalRaw) || (harga * jumlah);
+        
+        grandTotal += totalItem;
 
-    // Formating items secara konsisten (menyertakan gambar produk)
-    const formattedItems = currentCartData.map(item => {
-        const qty = parseInt(item.jumlah || item.qty || 1, 10);
-        const harga = parseFloat(item.harga_satuan || item.harga || 0);
-        const total = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : (harga * qty);
+        // Ambil URL gambar produk jika tersedia, berikan fallback gambar default jika kosong
+        const gambarProduk = item.gambar && item.gambar !== "" ? item.gambar : "https://via.placeholder.com/80?text=Menu";
 
-        return {
-            id_produk: item.id_produk || '',
-            nama_produk: item.nama_produk || item.nama || 'Produk',
-            jumlah: qty,
-            harga_satuan: harga,
-            subtotal: total,
-            gambar: item.gambar || ''
-        };
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'cart-item';
+        itemDiv.style.cssText = "display: flex; align-items: center; gap: 12px; background: #fff; padding: 12px; border-radius: 16px; margin-bottom: 10px; border: 1px solid #e2e8f0;";
+        
+        itemDiv.innerHTML = `
+            <img src="${gambarProduk}" alt="${item.nama_produk || 'Produk'}" onerror="this.src='https://via.placeholder.com/80?text=Menu';" style="width: 64px; height: 64px; object-fit: cover; border-radius: 12px; border: 1px solid #eee; flex-shrink: 0;">
+            <div class="cart-info" style="flex: 1;">
+                <h4 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 2px;">${item.nama_produk || 'Produk'}</h4>
+                <p style="font-size: 12px; color: #475569; margin-bottom: 2px;">Rp ${harga.toLocaleString('id-ID')} × <strong>${jumlah}</strong></p>
+                ${item.catatan ? `<p style="font-size: 11px; font-style: italic; color: #94a3b8; margin-bottom: 2px;">Catatan: "${item.catatan}"</p>` : ''}
+                <p style="font-size: 13px; font-weight: 700; color: #10b981; margin-top: 4px;">Rp ${totalItem.toLocaleString('id-ID')}</p>
+            </div>
+            <button type="button" class="btn-hapus" onclick="hapusItemKeranjang(event, '${item.id_produk}', this)" style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; padding: 6px 10px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer;">Hapus</button>
+        `;
+        cartList.appendChild(itemDiv);
     });
+
+    if (totalSection) {
+        totalSection.style.display = 'block';
+        const grandTotalElem = document.getElementById('grand-total');
+        if (grandTotalElem) {
+            grandTotalElem.innerText = 'Rp ' + grandTotal.toLocaleString('id-ID');
+        }
+    }
+}
+
+// --- FUNGSI HAPUS DATA ITEM (OPTIMISTIC UI / INSTAN) ---
+async function hapusItemKeranjang(event, idProduk, buttonElement) {
+    if (event) event.preventDefault();
+
+    if (!confirm("Apakah Anda yakin ingin menghapus produk ini dari keranjang?")) return;
+
+    buttonElement.disabled = true;
+    buttonElement.innerText = "...";
+
+    // 1. Hapus secara instan dari tampilan lokal & update cache
+    currentCartItems = currentCartItems.filter(item => String(item.id_produk).trim() !== String(idProduk).trim());
+    renderCartItems(currentCartItems);
+    localStorage.setItem(cacheKey, JSON.stringify(currentCartItems));
 
     const payload = {
-        action: "createTransaction",
-        user_info: userInfo,
-        id_transaksi: idTransaksi,
-        total_bayar: totalBayar,
-        metode_pembayaran: metodePembayaran,
-        status: statusAwal,
-        catatan: `Alamat: ${userNamaJalan} (Lat: ${userLatitude}, Lng: ${userLongitude})`, 
-        items: formattedItems
+        action: 'deleteCartItem',
+        data: {
+            user: namaLogIn,
+            id_produk: idProduk
+        }
     };
 
-    // SOLUSI CORS FETCH: Gunakan mode 'no-cors' atau kirim sebagai text/plain dengan penanganan response yang aman
-    fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors', // <-- Ditambahkan untuk mengatasi error CORS langsung dari browser ke Apps Script
-        headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(() => {
-        // Karena mode 'no-cors' membuat response menjadi opaque (tidak bisa dibaca .json()), 
-        // kita asumsikan permintaan berhasil terkirim ke server Apps Script.
-        localStorage.removeItem('cart');
-        localStorage.removeItem('keranjang');
-        localStorage.removeItem('cartItems');
-        localStorage.removeItem('spg_cart');
-        localStorage.removeItem('checkout_items');
-        if (namaLogIn) localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
-        if (window.updateCartBadge) window.updateCartBadge();
-
-        localStorage.setItem('last_transaction_id', idTransaksi);
-
-        if (!isTunai) {
-            const qrisData = {
-                id_transaksi: idTransaksi,
-                total_bayar: totalBayar,
-                nama_user: namaLogIn,
-                qr_code_url: ''
-            };
-            localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
-            alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
-            window.location.replace('qris_payment.html');
-        } else {
-            alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
-            window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
-        }
-    })
-    .catch(err => {
-        console.error("Gagal memproses transaksi:", err);
-        alert("Terjadi kesalahan koneksi saat memproses transaksi.");
-        if (btnSubmit) {
-            btnSubmit.disabled = false;
-            btnSubmit.innerText = "Proses Pembayaran";
-        }
-    });
+    try {
+        await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload)
+        });
+    } catch (error) {
+        console.error("Gagal menghapus item di server:", error);
+        alert("Gagal terhubung ke jaringan.");
+        fetchCartFromServer();
+    }
 }
+
+// --- FUNGSI MELANJUTKAN KE HALAMAN CHECKOUT ---
+function prosesSemuaTransaksi() {
+    if (!currentCartItems || currentCartItems.length === 0) {
+        alert("Keranjang Anda kosong. Silakan pilih produk terlebih dahulu.");
+        return;
+    }
+
+    const btnCheckout = document.getElementById('btn-checkout');
+    if (btnCheckout) {
+        btnCheckout.disabled = true;
+        btnCheckout.innerText = "Memproses...";
+    }
+
+    // 1. Simpan item keranjang ke localStorage untuk dibaca oleh transaksi.html
+    localStorage.setItem('checkout_items', JSON.stringify(currentCartItems));
+
+    // 2. Arahkan pengguna ke halaman checkout
+    window.location.href = 'transaksi.html';
+}
+
+// --- FUNGSI NAVIGASI LANDING PAGE ---
+function bukaKeranjang() {
+    window.location.href = 'chart.html';
+}
+
+function logout() {
+    if (confirm("Apakah Anda yakin ingin keluar?")) {
+        localStorage.removeItem('namaUser');
+        window.location.replace('index.html');
+    }
+}
+
+// --- EKSEKUSI GLOBAL WINDOW ---
+window.prosesSemuaTransaksi = prosesSemuaTransaksi;
+window.hapusItemKeranjang = hapusItemKeranjang;
+window.bukaKeranjang = bukaKeranjang;
+window.logout = logout;
