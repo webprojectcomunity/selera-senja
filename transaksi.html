@@ -4,87 +4,121 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Konfirmasi Pesanan</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS Script CDN Resmi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
     <!-- TomTom Maps SDK CSS -->
-    <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css'>
-    <link rel="stylesheet" href="detail_pesanan.css">
+    <link rel="stylesheet" type="text/css" href="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css">
     <link rel="stylesheet" href="transaksi.css">
-    <style>
-        .static-map-box {
-            position: relative;
-            width: 100%;
-            height: 140px;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 8px;
-            border: 1px solid #ddd;
-        }
-        #static-map {
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Mencegah interaksi/geser peta */
-        }
-        .address-text {
-            font-size: 13px;
-            color: #333;
-            font-weight: 500;
-            background: #f8f9fa;
-            padding: 8px 10px;
-            border-radius: 6px;
-            border: 1px solid #eee;
-        }
-    </style>
 </head>
-<body>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen py-4 sm:py-6 px-3 sm:px-4 flex justify-center items-center">
 
-  <div class="app-container">
-        <div class="header">
-            <h2>Konfirmasi Pembayaran</h2>
+    <div class="w-full max-w-md bg-white sm:rounded-3xl shadow-xl border border-slate-100 overflow-hidden min-h-screen sm:min-h-[820px] flex flex-col justify-between relative">
+        
+        <!-- Header Top Bar -->
+        <div class="w-full">
+            <header class="flex items-center justify-between p-4 bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-100">
+                <a href="chart.html" class="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <h1 class="text-base font-bold text-slate-900">Konfirmasi Pembayaran</h1>
+                <div class="w-9"></div>
+            </header>
+
+            <main class="p-4 space-y-4 pb-28">
+                <!-- Ringkasan Item Pesanan -->
+                <section class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+                    <div class="flex items-center gap-2 text-slate-900 font-bold text-sm pb-2 border-b border-slate-200/60">
+                        <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i>
+                        <h2>Ringkasan Pesanan</h2>
+                    </div>
+
+                    <div id="summary-items-container" class="space-y-2 text-xs text-slate-600">
+                        <p class="text-center text-slate-400 py-2">Memuat rincian pesanan...</p>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-3 border-t border-dashed border-slate-200 font-bold text-sm">
+                        <span class="text-slate-700">Total Pembayaran</span>
+                        <span id="element-total-bayar" class="text-emerald-600 text-base">Rp 0</span>
+                    </div>
+                </section>
+
+                <!-- Pilihan Metode Pembayaran -->
+                <section class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+                    <div class="flex items-center gap-2 text-slate-900 font-bold text-sm pb-1">
+                        <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i>
+                        <h2>Metode Pembayaran</h2>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="payment-card flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 cursor-pointer transition-all">
+                            <div class="flex items-center gap-3">
+                                <input type="radio" id="pay-tunai" name="payment_method" value="Tunai" checked class="w-4 h-4 accent-emerald-600">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800">Tunai (COD)</p>
+                                    <p class="text-[11px] text-slate-400">Bayar langsung saat produk tiba</p>
+                                </div>
+                            </div>
+                            <i data-lucide="banknote" class="w-5 h-5 text-slate-400"></i>
+                        </label>
+
+                        <label class="payment-card flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 cursor-pointer transition-all">
+                            <div class="flex items-center gap-3">
+                                <input type="radio" id="pay-qris" name="payment_method" value="QRIS" class="w-4 h-4 accent-emerald-600">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800">QRIS (Scan & Pay)</p>
+                                    <p class="text-[11px] text-slate-400">GoPay, OVO, Dana, ShopeePay, Bank</p>
+                                </div>
+                            </div>
+                            <i data-lucide="qr-code" class="w-5 h-5 text-slate-400"></i>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Alamat Pengiriman (TomTom Map) -->
+                <section class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+                    <div class="flex items-center gap-2 text-slate-900 font-bold text-sm pb-1">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-emerald-600"></i>
+                        <h2>Alamat Pengiriman</h2>
+                    </div>
+
+                    <!-- TomTom Map Box Container -->
+                    <div class="static-map-box relative w-full h-36 rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+                        <div id="static-map" class="w-full h-full"></div>
+                    </div>
+
+                    <div id="display-nama-jalan" class="text-xs text-slate-700 bg-white p-3 rounded-xl border border-slate-200 font-medium leading-relaxed">
+                        Memuat alamat pengiriman...
+                    </div>
+                </section>
+            </main>
         </div>
 
-        <div class="transaksi-container">
-            <!-- Ringkasan Item Pesanan -->
-            <div class="section-box">
-                <h3>Ringkasan Pesanan</h3>
-                <div id="summary-items-container">
-                    <p style="color: #7f8c8d; font-size: 13px;">Memuat ringkasan...</p>
-                </div>
-                <div style="display: flex; justify-content: space-between; margin-top: 12px; font-weight: bold; font-size: 16px; border-top: 1px dashed #ddd; padding-top: 10px;">
-                    <span>Total Pembayaran:</span>
-                    <span id="element-total-bayar" style="color: #e74c3c;">Rp 0</span>
-                </div>
-            </div>
+        <!-- Sticky Floating Action Footer -->
+        <footer class="fixed sm:absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 shadow-lg z-30">
+            <button type="button" id="btn-proses-bayar" onclick="prosesPembayaranAkhir()" class="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-slate-900/10 flex items-center justify-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span>Konfirmasi & Bayar Sekarang</span>
+            </button>
+        </footer>
 
-            <!-- Pilihan Metode Pembayaran -->
-            <div class="section-box">
-                <h3>Metode Pembayaran</h3>
-                
-                <label class="payment-option" for="pay-tunai" style="display: block; margin-bottom: 10px; cursor: pointer;">
-                    <input type="radio" id="pay-tunai" name="payment_method" value="Tunai" checked>
-                    <span>Tunai (Cash / Bayar di Tempat)</span>
-                </label>
-                
-                <label class="payment-option" for="pay-qris" style="display: block; cursor: pointer;">
-                    <input type="radio" id="pay-qris" name="payment_method" value="QRIS">
-                    <span>QRIS (Scan & Pay)</span>
-                </label>
-            </div>
-
-            <!-- Alamat Pengiriman (Pengganti Catatan) -->
-            <div class="section-box">
-                <h3>Alamat Pengiriman</h3>
-                <div class="static-map-box">
-                    <div id="static-map"></div>
-                </div>
-                <div id="display-nama-jalan" class="address-text">Memuat alamat pengiriman...</div>
-            </div>
-
-            <!-- Tombol Eksekusi -->
-            <button type="button" id="btn-proses-bayar" class="btn-proses" onclick="prosesPembayaranAkhir()">Konfirmasi & Bayar Sekarang</button>
-        </div>
     </div>
 
    <!-- TomTom Maps SDK JS -->
    <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
    <script src="script_transaksi.js"></script>
+   <script>
+       document.addEventListener('DOMContentLoaded', () => {
+           if (window.lucide) lucide.createIcons();
+       });
+   </script>
 </body>
 </html>
