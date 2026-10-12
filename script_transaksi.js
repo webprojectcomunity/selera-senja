@@ -159,6 +159,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+// --- FUNGSI HELPER UNTUK EKSTRAK KOORDINAT DARI CATATAN ---
+function extractCoordinatesFromNote(catatan) {
+    let lat = 1.0084; // Default Karimun
+    let lng = 103.4435;
+
+    if (!catatan) return { lat, lng };
+
+    try {
+        const latMatch = catatan.match(/Lat:\s*([0-9.-]+)/i);
+        const lngMatch = catatan.match(/Lng:\s*([0-9.-]+)/i);
+
+        if (latMatch && latMatch[1]) lat = parseFloat(latMatch[1]);
+        if (lngMatch && lngMatch[1]) lng = parseFloat(lngMatch[1]);
+    } catch (e) {
+        console.error("Gagal ekstrak koordinat:", e);
+    }
+
+    return { lat, lng };
+}
+
 // --- FUNGSI PETA STATIS TOMTOM YANG AMAN DARI ERROR & DIOPTIMALKAN ---
 function initStaticMap(lat, lng) {
     try {
@@ -206,6 +226,36 @@ function initStaticMap(lat, lng) {
     } catch (err) {
         console.error("Gagal merender peta statis:", err);
     }
+}
+
+// --- FUNGSI RENDER KARTU TRANSAKSI DENGAN PETA DINAMIS ---
+function renderOrderCard(order) {
+    const coords = extractCoordinatesFromNote(order.catatan);
+    const mapContainerId = 'static-map-' + order.id_transaksi;
+
+    setTimeout(() => {
+        const mapElement = document.getElementById(mapContainerId);
+        if (mapElement) {
+            mapElement.innerHTML = '';
+            const staticMap = tt.map({
+                key: tomtomApiKey,
+                container: mapContainerId,
+                center: [coords.lng, coords.lat], 
+                zoom: 15,
+                interactive: false,
+                dragPan: false,
+                scrollZoom: false
+            });
+
+            new tt.Marker({ color: '#ef4444' })
+                .setLngLat([coords.lng, coords.lat])
+                .addTo(staticMap);
+
+            setTimeout(() => {
+                staticMap.resize();
+            }, 300);
+        }
+    }, 100);
 }
 
 // --- FUNGSI PROSES PEMBAYARAN AKHIR ---
