@@ -8,7 +8,7 @@ const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('us
 let currentCartData = [];
 let totalBayar = 0;
 
-// Variabel untuk menyimpan data alamat default (Default Tanjung Balai Karimun: Lat: 1.0084, Lng: 103.4435 atau sejenisnya)
+// Variabel untuk menyimpan data alamat default (Default Tanjung Balai Karimun: Lat: 1.0084, Lng: 103.4435)
 let userLatitude = localStorage.getItem('latitude') || '1.0084';
 let userLongitude = localStorage.getItem('longitude') || '103.4435';
 let userNamaJalan = localStorage.getItem('nama_jalan') || 'Alamat belum diatur';
@@ -50,15 +50,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     let latNum = parseFloat(userLatitude);
     let lngNum = parseFloat(userLongitude);
 
-    // Jika latitude melebihi batas dunia (-90 s/d 90), kemungkinan tertukar dengan longitude
     if (isNaN(latNum) || latNum < -90 || latNum > 90) {
         if (!isNaN(lngNum) && lngNum >= -90 && lngNum <= 90) {
-            // Tukar balik
             let temp = latNum;
             latNum = lngNum;
             lngNum = temp;
         } else {
-            // Fallback default aman (Karimun)
             latNum = 1.0084;
             lngNum = 103.4435;
         }
@@ -77,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Inisialisasi Peta TomTom Statis dengan koordinat yang sudah divalidasi
+    // Inisialisasi Peta TomTom Statis dengan koordinat yang sudah divalidasi [Longitude, Latitude]
     initStaticMap(userLatitude, userLongitude);
 
     // B. Ambil data keranjang dari localStorage
@@ -134,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         totalBayarElem.innerText = formatRupiah(totalBayar);
     }
 
-    // F. Render ringkasan item (Menampilkan Nama Saja & Gambar Produk)
+    // F. Render ringkasan item (DENGAN GAMBAR PRODUK)
     const summaryContainer = document.getElementById('summary-items-container');
     if (summaryContainer) {
         summaryContainer.innerHTML = '';
@@ -171,6 +168,7 @@ function initStaticMap(lat, lng) {
         if (isNaN(numLat)) numLat = 1.0084;
         if (isNaN(numLng)) numLng = 103.4435;
 
+        // Auto-correct jika lat/lng tertukar
         if (numLat < -90 || numLat > 90) {
             let temp = numLat;
             numLat = numLng;
@@ -186,6 +184,7 @@ function initStaticMap(lat, lng) {
         if (!mapContainer) return;
         mapContainer.innerHTML = '';
 
+        // TomTom membutuhkan format center: [Longitude, Latitude]
         const staticMap = tt.map({
             key: tomtomApiKey,
             container: 'static-map',
