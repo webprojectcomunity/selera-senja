@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const jalanElem = document.getElementById('display-nama-jalan');
     if (jalanElem) {
         if (userNamaJalan && userNamaJalan !== "null" && userNamaJalan !== "undefined" && userNamaJalan !== "Alamat belum diatur") {
-on under thecovers fast forward toit seem we were more thanlove andsort ofyet we hadall we needmamaholdineach other and takehim back to two thousand twodads andalmoststaywhere we saysongs withfriends andso thereprogram below
+            jalanElem.innerText = userNamaJalan;
         } else {
             jalanElem.innerText = "Alamat belum diatur. Silakan perbarui profil Anda.";
         }
@@ -134,7 +134,7 @@ on under thecovers fast forward toit seem we were more thanlove andsort ofyet we
         totalBayarElem.innerText = formatRupiah(totalBayar);
     }
 
-    // F. Render ringkasan item (Menampilkan Nama Saja & Gambar Pendukung)
+    // F. Render ringkasan item
     const summaryContainer = document.getElementById('summary-items-container');
     if (summaryContainer) {
         summaryContainer.innerHTML = '';
@@ -142,20 +142,13 @@ on under thecovers fast forward toit seem we were more thanlove andsort ofyet we
             const nama = item.nama_produk || item.nama || 'Produk';
             const qty = parseInt(item.jumlah || item.qty || 1, 10);
             const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : ((item.harga_satuan || item.harga || 0) * qty);
-            const gambarProduk = item.gambar && item.gambar !== "" ? item.gambar : "https://via.placeholder.com/60?text=Menu";
             
             const itemRow = document.createElement('div');
-            itemRow.className = "flex items-center justify-between text-xs text-slate-700 py-2 border-b border-slate-100 last:border-none";
-            itemRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #eee; color: #555;";
+            itemRow.className = "flex justify-between items-center text-xs text-slate-700 py-1";
+            itemRow.style.cssText = "display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #555;";
             itemRow.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="${gambarProduk}" alt="${nama}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
-                    <div>
-                        <span style="font-weight: 600; color: #0f172a; display: block;">${nama}</span>
-                        <span style="font-size: 11px; color: #64748b;">Jumlah: ${qty}x</span>
-                    </div>
-                </div>
-                <span style="font-weight: 600; color: #10b981;">${formatRupiah(subtotal)}</span>
+                <span>${nama} (${qty}x)</span>
+                <span>${formatRupiah(subtotal)}</span>
             `;
             summaryContainer.appendChild(itemRow);
         });
@@ -246,7 +239,7 @@ function prosesPembayaranAkhir() {
         nama_jalan: userNamaJalan
     };
 
-    // Formating items secara konsisten (menyertakan gambar produk)
+    // Formating items secara konsisten
     const formattedItems = currentCartData.map(item => {
         const qty = parseInt(item.jumlah || item.qty || 1, 10);
         const harga = parseFloat(item.harga_satuan || item.harga || 0);
@@ -257,8 +250,7 @@ function prosesPembayaranAkhir() {
             nama_produk: item.nama_produk || item.nama || 'Produk',
             jumlah: qty,
             harga_satuan: harga,
-            subtotal: total,
-            gambar: item.gambar || ''
+            subtotal: total
         };
     });
 
