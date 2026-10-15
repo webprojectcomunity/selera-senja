@@ -1,17 +1,19 @@
-// --- KONFIGURASI API (Aman dari Identifier Redeclaration Error) ---
+// --- KONFIGURASI API & TOMTOM ---
 var APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
 var PROFILE_API_URL = window.PROFILE_API_URL || 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 var tomtomApiKey = window.tomtomApiKey || 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
 
 const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
-const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('userId') || '';
+const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('userId') || localStorage.getItem('id_user') || '';
 let currentCartData = [];
 let totalBayar = 0;
 
-// Variabel untuk menyimpan data alamat default (Default Tanjung Balai Karimun: Lat: 1.0084, Lng: 103.4435)
-let userLatitude = localStorage.getItem('latitude') || '1.0084';
+// Variabel Peta Global ala pengaturan_alamat.html
+let map, marker;
+let userLatitude = localStorage.getItem('latitude') || '0.9103';
 let userLongitude = localStorage.getItem('longitude') || '103.4435';
 let userNamaJalan = localStorage.getItem('nama_jalan') || 'Alamat belum diatur';
+let cachedEmail = localStorage.getItem('emailUser') || localStorage.getItem('email') || "";
 
 function formatRupiah(number) {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
@@ -27,12 +29,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (profResult.data.latitude) userLatitude = profResult.data.latitude;
                 if (profResult.data.longitude) userLongitude = profResult.data.longitude;
                 if (profResult.data.nama_jalan) userNamaJalan = profResult.data.nama_jalan;
+                if (profResult.data.email) cachedEmail = profResult.data.email;
                 
                 // Simpan ke cache lokal
                 localStorage.setItem('latitude', userLatitude);
                 localStorage.setItem('longitude', userLongitude);
                 localStorage.setItem('nama_jalan', userNamaJalan);
-                
                 if (profResult.data.email) localStorage.setItem('emailUser', profResult.data.email);
                 if (profResult.data.no_hp) localStorage.setItem('noHpUser', profResult.data.no_hp);
             }
@@ -46,36 +48,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     userLatitude = localStorage.getItem('latitude') || userLatitude;
     userLongitude = localStorage.getItem('longitude') || userLongitude;
 
-    // VALIDASI & KOREKSI KOORDINAT (Mencegah nilai lat/lng tertukar atau di luar rentang -90 / 90)
-    let latNum = parseFloat(userLatitude);
-    let lngNum = parseFloat(userLongitude);
+    let latNum = parseFloat(userLatitude) || 0.9103;
+    let lngNum = parseFloat(userLongitude) || 103.4435;
 
-    if (isNaN(latNum) || latNum < -90 || latNum > 90) {
-        if (!isNaN(lngNum) && lngNum >= -90 && lngNum <= 90) {
-            let temp = latNum;
-            latNum = lngNum;
-            lngNum = temp;
-        } else {
-            latNum = 1.0084;
-            lngNum = 103.4435;
-        }
-    }
-    
+    // Validasi rentang koordinat global
+    if (latNum < -90 || latNum > 90 || isNaN(latNum)) latNum = 0.9103;
+    if (lngNum < -180 || lngNum > 180 || isNaN(lngNum)) lngNum = 103.4435;
+
     userLatitude = latNum;
     userLongitude = lngNum;
 
     // Tampilkan nama jalan ke antarmuka
-    const jalanElem = document.getElementById('display-nama-jalan');
-    if (jalanElem) {
-        if (userNamaJalan && userNamaJalan !== "null" && userNamaJalan !== "undefined" && userNamaJalan !== "Alamat belum diatur") {
-            jalanElem.innerText = userNamaJalan;
-        } else {
-            jalanElem.innerText = "Alamat belum diatur. Silakan perbarui profil Anda.";
-        }
-    }
+    updateAlamatUI(userNamaJalan);
 
-    // Inisialisasi Peta TomTom Statis dengan koordinat profil yang sudah divalidasi [Longitude, Latitude]
-    initStaticMap(userLatitude, userLongitude);
+    // Inisialisasi Peta TomTom Interaktif (seperti pengaturan_alamat.html)
+    initInteractiveMap(userLatitude, userLongitude);
 
     // B. Ambil data keranjang dari localStorage
     const specificCacheKey = namaLogIn ? `cart_cache_${namaLogIn.trim()}` : '';
@@ -159,101 +146,128 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// --- FUNGSI HELPER UNTUK EKSTRAK KOORDINAT DARI CATATAN ---
-function extractCoordinatesFromNote(catatan) {
-    let lat = 1.0084; 
-    let lng = 103.4435;
-
-    if (!catatan) return { lat, lng };
+// --- INISIALISASI PETA TOMTOM INTERAKTIF (ALA PENGATURAN ALAMAT) ---
+function initInteractiveMap(lat, lng) {
+    if (map) return;
 
     try {
-        const latMatch = catatan.match(/Lat:\s*([0-9.-]+)/i);
-        const lngMatch = catatan.match(/Lng:\s*([0-9.-]+)/i);
-
-        if (latMatch && latMatch[1]) lat = parseFloat(latMatch[1]);
-        if (lngMatch && lngMatch[1]) lng = parseFloat(lngMatch[1]);
-    } catch (e) {
-        console.error("Gagal ekstrak koordinat:", e);
-    }
-
-    return { lat, lng };
-}
-
-// --- FUNGSI PETA STATIS TOMTOM YANG AMAN DARI ERROR & DIOPTIMALKAN ---
-function initStaticMap(lat, lng) {
-    try {
-        let numLat = parseFloat(lat);
-        let numLng = parseFloat(lng);
-
-        if (isNaN(numLat)) numLat = 1.0084;
-        if (isNaN(numLng)) numLng = 103.4435;
-
-        if (numLat < -90 || numLat > 90) {
-            let temp = numLat;
-            numLat = numLng;
-            numLng = temp;
-        }
-
-        if (numLat < -90) numLat = -90;
-        if (numLat > 90) numLat = 90;
-        if (numLng < -180) numLng = -180;
-        if (numLng > 180) numLng = 180;
-
-        const mapContainer = document.getElementById('static-map');
-        if (!mapContainer) return;
-        mapContainer.innerHTML = '';
-
-        const staticMap = tt.map({
+        map = tt.map({
             key: tomtomApiKey,
             container: 'static-map',
-            center: [numLng, numLat], 
-            zoom: 15,
-            interactive: false,
-            dragPan: false,
-            scrollZoom: false
+            center: [lng, lat],
+            zoom: 15
         });
 
-        new tt.Marker({ color: '#ef4444' })
-            .setLngLat([numLng, numLat])
-            .addTo(staticMap);
+        map.addControl(new tt.NavigationControl());
+
+        marker = new tt.Marker({ draggable: true, color: '#ef4444' })
+            .setLngLat([lng, lat])
+            .addTo(map);
+
+        marker.on('dragend', function() {
+            var lngLat = marker.getLngLat();
+            userLatitude = lngLat.lat;
+            userLongitude = lngLat.lng;
+            simpanAlamatKeDatabaseBackground(userLatitude, userLongitude, userNamaJalan);
+        });
+
+        map.on('click', function(e) {
+            var lngLat = e.lngLat;
+            marker.setLngLat(lngLat);
+            userLatitude = lngLat.lat;
+            userLongitude = lngLat.lng;
+            simpanAlamatKeDatabaseBackground(userLatitude, userLongitude, userNamaJalan);
+        });
 
         setTimeout(() => {
-            staticMap.resize();
+            map.resize();
         }, 300);
-            
+
     } catch (err) {
-        console.error("Gagal merender peta statis:", err);
+        console.error("Gagal menginisialisasi peta interaktif TomTom:", err);
     }
 }
 
-// --- FUNGSI RENDER KARTU TRANSAKSI DENGAN PETA DINAMIS ---
-function renderOrderCard(order) {
-    const coords = extractCoordinatesFromNote(order.catatan);
-    const mapContainerId = 'static-map-' + order.id_transaksi;
+// --- FUNGSI GPS TOMBOL GEOLOCATION ---
+function pusatkanKePosisiGPS() {
+    if (!navigator.geolocation) {
+        alert("Browser Anda tidak mendukung fitur Geolocation.");
+        return;
+    }
 
-    setTimeout(() => {
-        const mapElement = document.getElementById(mapContainerId);
-        if (mapElement) {
-            mapElement.innerHTML = '';
-            const staticMap = tt.map({
-                key: tomtomApiKey,
-                container: mapContainerId,
-                center: [coords.lng, coords.lat], 
-                zoom: 15,
-                interactive: false,
-                dragPan: false,
-                scrollZoom: false
-            });
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            var lat = position.coords.latitude;
+            var lng = position.coords.longitude;
+            userLatitude = lat;
+            userLongitude = lng;
 
-            new tt.Marker({ color: '#ef4444' })
-                .setLngLat([coords.lng, coords.lat])
-                .addTo(staticMap);
+            if (map && marker) {
+                map.setCenter([lng, lat]);
+                map.setZoom(16);
+                marker.setLngLat([lng, lat]);
+            }
 
-            setTimeout(() => {
-                staticMap.resize();
-            }, 300);
+            simpanAlamatKeDatabaseBackground(userLatitude, userLongitude, userNamaJalan);
+            alert("Posisi peta berhasil diperbarui ke lokasi GPS Anda!");
+        },
+        function(error) {
+            alert("Gagal mendeteksi GPS. Pastikan izin lokasi/GPS aktif.");
+            console.error(error);
+        },
+        { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
+    );
+}
+
+// --- SIMPAN OTOMATIS KE DATABASE USERS DI LATAR BELAKANG SAAT PIN DIGESER ---
+function simpanAlamatKeDatabaseBackground(lat, lng, jalan) {
+    if (!currentUserId) return;
+
+    var payload = {
+        action: "updateProfile",
+        id_user: currentUserId,
+        nama: localStorage.getItem('namaUser') || localStorage.getItem('nama') || "User",
+        email: cachedEmail || "user@placeholder.com",
+        no_hp: localStorage.getItem('noHpUser') || localStorage.getItem('no_hp') || "",
+        latitude: lat,
+        longitude: lng,
+        nama_jalan: jalan
+    };
+
+    fetch(PROFILE_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(res => {
+        if (res.success) {
+            localStorage.setItem('latitude', lat);
+            localStorage.setItem('longitude', lng);
         }
-    }, 100);
+    })
+    .catch(err => console.error("Background sync alamat gagal:", err));
+}
+
+function updateAlamatUI(namaJalan) {
+    const jalanElem = document.getElementById('display-nama-jalan');
+    if (jalanElem) {
+        if (namaJalan && namaJalan !== "null" && namaJalan !== "undefined" && namaJalan !== "Alamat belum diatur") {
+            jalanElem.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <span>📍 ${namaJalan}</span>
+                    <button type="button" onclick="pusatkanKePosisiGPS()" style="background: #e2e8f0; border: none; padding: 6px 10px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 11px; width: fit-content; color: #0f172a;">Gunakan Lokasi GPS Saya</button>
+                </div>
+            `;
+        } else {
+            jalanElem.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <span>Alamat belum diatur secara spesifik pada pin peta.</span>
+                    <button type="button" onclick="pusatkanKePosisiGPS()" style="background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 11px; width: fit-content;">Gunakan Lokasi GPS Saya</button>
+                </div>
+            `;
+        }
+    }
 }
 
 // --- FUNGSI PROSES PEMBAYARAN AKHIR ---
@@ -279,7 +293,7 @@ function prosesPembayaranAkhir() {
     const userInfo = {
         id_user: currentUserId,
         nama: namaLogIn,
-        email: localStorage.getItem('emailUser') || '',
+        email: cachedEmail,
         no_hp: localStorage.getItem('noHpUser') || '',
         latitude: userLatitude,
         longitude: userLongitude,
@@ -351,7 +365,7 @@ function prosesPembayaranAkhir() {
         alert("Terjadi kesalahan koneksi saat memproses transaksi.");
         if (btnSubmit) {
             btnSubmit.disabled = false;
-            btnSubmit.innerText = "Proses Pembayaran";
+            btnSubmit.innerText = "Konfirmasi & Bayar Sekarang";
         }
     });
 }
