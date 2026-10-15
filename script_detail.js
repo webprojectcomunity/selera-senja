@@ -102,7 +102,15 @@ function renderProduct(item) {
     const hargaRaw = getVal('harga').toString().replace(/[^0-9]/g, '');
     const hargaSatuan = parseFloat(hargaRaw) || 0;
 
+    // Tampilkan Nama Produk
     document.getElementById('nama-produk').innerText = getVal('nama') || 'Tanpa Nama';
+    
+    // Tampilkan Deskripsi Produk dari kolom spreadsheet (Kolom D / 'deskripsi')
+    const deskripsiElem = document.getElementById('deskripsi-produk');
+    if (deskripsiElem) {
+        deskripsiElem.innerText = getVal('deskripsi') || 'Tidak ada deskripsi tersedia untuk produk ini.';
+    }
+
     if (imgElement) {
         imgElement.src = getVal('gambar') || '';
     }
