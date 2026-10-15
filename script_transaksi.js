@@ -1,4 +1,4 @@
-// --- KONFIGURASI API & TOMTOM ---
+// --- KONFIGURASI API ---
 var APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
 var PROFILE_API_URL = window.PROFILE_API_URL || 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 var tomtomApiKey = window.tomtomApiKey || 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
@@ -8,11 +8,9 @@ const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('us
 let currentCartData = [];
 let totalBayar = 0;
 
-// Variabel Peta Global ala pengaturan_alamat.html
 let map, marker;
 let userLatitude = localStorage.getItem('latitude') || '0.9103';
 let userLongitude = localStorage.getItem('longitude') || '103.4435';
-let userNamaJalan = localStorage.getItem('nama_jalan') || 'Alamat belum diatur';
 let cachedEmail = localStorage.getItem('emailUser') || localStorage.getItem('email') || "";
 
 function formatRupiah(number) {
@@ -20,7 +18,7 @@ function formatRupiah(number) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // A. Ambil data profil, koordinat, & alamat terbaru dari API Database Profil (Sheet Users)
+    // A. Ambil data koordinat awal dari Database Profil (Sheet Users)
     if (currentUserId) {
         try {
             const profRes = await fetch(`${PROFILE_API_URL}?action=getUserProfile&id_user=${currentUserId}`);
@@ -28,40 +26,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (profResult.success && profResult.data) {
                 if (profResult.data.latitude) userLatitude = profResult.data.latitude;
                 if (profResult.data.longitude) userLongitude = profResult.data.longitude;
-                if (profResult.data.nama_jalan) userNamaJalan = profResult.data.nama_jalan;
                 if (profResult.data.email) cachedEmail = profResult.data.email;
                 
-                // Simpan ke cache lokal
                 localStorage.setItem('latitude', userLatitude);
                 localStorage.setItem('longitude', userLongitude);
-                localStorage.setItem('nama_jalan', userNamaJalan);
                 if (profResult.data.email) localStorage.setItem('emailUser', profResult.data.email);
                 if (profResult.data.no_hp) localStorage.setItem('noHpUser', profResult.data.no_hp);
             }
         } catch (e) {
-            console.error("Gagal memuat profil alamat dari database Users:", e);
+            console.error("Gagal memuat profil koordinat dari database:", e);
         }
     }
 
-    // Periksa ulang dari localStorage jika variabel masih kosong
-    userNamaJalan = localStorage.getItem('nama_jalan') || userNamaJalan;
     userLatitude = localStorage.getItem('latitude') || userLatitude;
     userLongitude = localStorage.getItem('longitude') || userLongitude;
 
     let latNum = parseFloat(userLatitude) || 0.9103;
     let lngNum = parseFloat(userLongitude) || 103.4435;
 
-    // Validasi rentang koordinat global
     if (latNum < -90 || latNum > 90 || isNaN(latNum)) latNum = 0.9103;
     if (lngNum < -180 || lngNum > 180 || isNaN(lngNum)) lngNum = 103.4435;
 
     userLatitude = latNum;
     userLongitude = lngNum;
 
-    // Tampilkan nama jalan ke antarmuka
-    updateAlamatUI(userNamaJalan);
-
-    // Inisialisasi Peta TomTom Interaktif (seperti pengaturan_alamat.html)
+    // Inisialisasi Peta TomTom Interaktif dengan koordinat dari Database Profil
     initInteractiveMap(userLatitude, userLongitude);
 
     // B. Ambil data keranjang dari localStorage
@@ -118,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         totalBayarElem.innerText = formatRupiah(totalBayar);
     }
 
-    // F. Render ringkasan item (DENGAN GAMBAR PRODUK)
+    // F. Render ringkasan item
     const summaryContainer = document.getElementById('summary-items-container');
     if (summaryContainer) {
         summaryContainer.innerHTML = '';
@@ -144,9 +133,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             summaryContainer.appendChild(itemRow);
         });
     }
+
+    if (window.lucide) lucide.createIcons();
 });
 
-// --- INISIALISASI PETA TOMTOM INTERAKTIF (ALA PENGATURAN ALAMAT) ---
+// --- INISIALISASI PETA TOMTOM INTERAKTIF ---
 function initInteractiveMap(lat, lng) {
     if (map) return;
 
@@ -168,7 +159,6 @@ function initInteractiveMap(lat, lng) {
             var lngLat = marker.getLngLat();
             userLatitude = lngLat.lat;
             userLongitude = lngLat.lng;
-            simpanAlamatKeDatabaseBackground(userLatitude, userLongitude, userNamaJalan);
         });
 
         map.on('click', function(e) {
@@ -176,7 +166,6 @@ function initInteractiveMap(lat, lng) {
             marker.setLngLat(lngLat);
             userLatitude = lngLat.lat;
             userLongitude = lngLat.lng;
-            simpanAlamatKeDatabaseBackground(userLatitude, userLongitude, userNamaJalan);
         });
 
         setTimeout(() => {
@@ -208,7 +197,6 @@ function pusatkanKePosisiGPS() {
                 marker.setLngLat([lng, lat]);
             }
 
-            simpanAlamatKeDatabaseBackground(userLatitude, userLongitude, userNamaJalan);
             alert("Posisi peta berhasil diperbarui ke lokasi GPS Anda!");
         },
         function(error) {
@@ -219,60 +207,17 @@ function pusatkanKePosisiGPS() {
     );
 }
 
-// --- SIMPAN OTOMATIS KE DATABASE USERS DI LATAR BELAKANG SAAT PIN DIGESER ---
-function simpanAlamatKeDatabaseBackground(lat, lng, jalan) {
-    if (!currentUserId) return;
-
-    var payload = {
-        action: "updateProfile",
-        id_user: currentUserId,
-        nama: localStorage.getItem('namaUser') || localStorage.getItem('nama') || "User",
-        email: cachedEmail || "user@placeholder.com",
-        no_hp: localStorage.getItem('noHpUser') || localStorage.getItem('no_hp') || "",
-        latitude: lat,
-        longitude: lng,
-        nama_jalan: jalan
-    };
-
-    fetch(PROFILE_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(res => {
-        if (res.success) {
-            localStorage.setItem('latitude', lat);
-            localStorage.setItem('longitude', lng);
-        }
-    })
-    .catch(err => console.error("Background sync alamat gagal:", err));
-}
-
-function updateAlamatUI(namaJalan) {
-    const jalanElem = document.getElementById('display-nama-jalan');
-    if (jalanElem) {
-        if (namaJalan && namaJalan !== "null" && namaJalan !== "undefined" && namaJalan !== "Alamat belum diatur") {
-            jalanElem.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <span>📍 ${namaJalan}</span>
-                    <button type="button" onclick="pusatkanKePosisiGPS()" style="background: #e2e8f0; border: none; padding: 6px 10px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 11px; width: fit-content; color: #0f172a;">Gunakan Lokasi GPS Saya</button>
-                </div>
-            `;
-        } else {
-            jalanElem.innerHTML = `
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <span>Alamat belum diatur secara spesifik pada pin peta.</span>
-                    <button type="button" onclick="pusatkanKePosisiGPS()" style="background: #10b981; color: white; border: none; padding: 6px 10px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 11px; width: fit-content;">Gunakan Lokasi GPS Saya</button>
-                </div>
-            `;
-        }
-    }
-}
-
 // --- FUNGSI PROSES PEMBAYARAN AKHIR ---
 function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
+    const inputNamaJalan = document.getElementById('input-nama-jalan');
+    const userNamaJalanInput = inputNamaJalan ? inputNamaJalan.value.trim() : '';
+
+    if (!userNamaJalanInput) {
+        alert("Silakan isi Nama Jalan / Patokan alamat pengiriman terlebih dahulu.");
+        if (inputNamaJalan) inputNamaJalan.focus();
+        return;
+    }
 
     const selectedRadio = document.querySelector('input[name="payment_method"]:checked');
     const metodePembayaran = selectedRadio ? selectedRadio.value : 'Tunai';
@@ -297,7 +242,7 @@ function prosesPembayaranAkhir() {
         no_hp: localStorage.getItem('noHpUser') || '',
         latitude: userLatitude,
         longitude: userLongitude,
-        nama_jalan: userNamaJalan
+        nama_jalan: userNamaJalanInput
     };
 
     const formattedItems = currentCartData.map(item => {
@@ -322,7 +267,7 @@ function prosesPembayaranAkhir() {
         total_bayar: totalBayar,
         metode_pembayaran: metodePembayaran,
         status: statusAwal,
-        catatan: `Alamat: ${userNamaJalan} (Lat: ${userLatitude}, Lng: ${userLongitude})`, 
+        catatan: `Alamat: ${userNamaJalanInput} (Lat: ${userLatitude}, Lng: ${userLongitude})`, 
         items: formattedItems
     };
 
