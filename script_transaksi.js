@@ -312,19 +312,7 @@ function prosesPembayaranAkhir() {
             };
             localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
 
-            // --- TRIGGER KIRIM PESAN WHATSAPP KE OWNER ---
-            const nomorOwner = "6281234567890"; // <-- Ganti dengan nomor WhatsApp Anda (awali dengan 62 tanpa tanda +)
-            const pesanWa = encodeURIComponent(
-                `🔔 *PESANAN QRIS BARU MASUK!*\n\n` +
-                `• No TRX: ${idTransaksi}\n` +
-                `• Nama: ${namaLogIn}\n` +
-                `• Total Tagihan: ${formatRupiah(totalBayar)}\n\n` +
-                `Silakan buat QRIS manual di GoPay Merchant, lalu upload gambar QRIS ke panel admin berdasarkan ID Transaksi tersebut.`
-            );
-
-            // Buka WhatsApp Web / Aplikasi ke nomor owner di tab baru
-            window.open(`https://api.whatsapp.com/send?phone=${nomorOwner}&text=${pesanWa}`, '_blank');
-
+            // Pesan WhatsApp kini ditangani sepenuhnya di server Google Apps Script (kode.gs) secara otomatis
             alert("Pesanan QRIS dibuat. Mohon tunggu sebentar, halaman pembayaran sedang menyiapkan kode QR...");
             window.location.replace('qris_payment.html');
         } else {
