@@ -330,3 +330,39 @@ body {
 #btn-submit-order:active {
     transform: scale(0.98);
 }
+
+/* Styling untuk pembatasan deskripsi */
+.deskripsi-container {
+    position: relative;
+    margin-top: 4px;
+}
+
+.deskripsi-text {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Batasi hanya 2 baris saat tertutup */
+    -webkit-box-orient: vertical;
+    transition: all 0.3s ease;
+}
+
+.deskripsi-text.expanded {
+    -webkit-line-clamp: unset; /* Tampilkan teks sepenuhnya saat diperluas */
+}
+
+.btn-toggle-deskripsi {
+    background: none;
+    border: none;
+    color: #10b981; /* Warna hijau tombol */
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 2px 0;
+    margin-top: 4px;
+}
+
+.btn-toggle-deskripsi:hover {
+    text-decoration: underline;
+}
