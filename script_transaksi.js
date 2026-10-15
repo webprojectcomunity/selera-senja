@@ -207,7 +207,7 @@ function pusatkanKePosisiGPS() {
     );
 }
 
-// --- FUNGSI PROSES PEMBAYARAN AKHIR ---
+// --- FUNGSI PROSES PEMBAYARAN AKHIR DENGAN KONFIRMASI ALAMAT & GPS ---
 function prosesPembayaranAkhir() {
     const btnSubmit = document.getElementById('btn-proses-bayar');
     const inputNamaJalan = document.getElementById('input-nama-jalan');
@@ -216,6 +216,19 @@ function prosesPembayaranAkhir() {
     if (!userNamaJalanInput) {
         alert("Silakan isi Nama Jalan / Patokan alamat pengiriman terlebih dahulu.");
         if (inputNamaJalan) inputNamaJalan.focus();
+        return;
+    }
+
+    // Peringatan konfirmasi untuk memastikan alamat teks dan titik GPS sudah sesuai
+    const cekAlamat = confirm(
+        "PERINGATAN PENGIRIMAN:\n\n" +
+        "Harap pastikan Nama Jalan dan Titik Lokasi GPS pada peta sudah benar-benar sesuai.\n\n" +
+        `• Alamat: ${userNamaJalanInput}\n` +
+        `• Koordinat GPS: (${Number(userLatitude).toFixed(5)}, ${Number(userLongitude).toFixed(5)})\n\n` +
+        "Apakah alamat dan titik lokasi tersebut sudah benar?"
+    );
+
+    if (!cekAlamat) {
         return;
     }
 
