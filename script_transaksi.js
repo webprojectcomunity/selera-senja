@@ -18,7 +18,7 @@ function formatRupiah(number) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // A. Ambil data profil, koordinat, & alamat terbaru dari API Database Profil
+    // A. Ambil data profil, koordinat, & alamat terbaru dari API Database Profil (Sheet Users)
     if (currentUserId) {
         try {
             const profRes = await fetch(`${PROFILE_API_URL}?action=getUserProfile&id_user=${currentUserId}`);
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (profResult.data.no_hp) localStorage.setItem('noHpUser', profResult.data.no_hp);
             }
         } catch (e) {
-            console.error("Gagal memuat profil alamat dari database:", e);
+            console.error("Gagal memuat profil alamat dari database Users:", e);
         }
     }
 
@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // Inisialisasi Peta TomTom Statis dengan koordinat yang sudah divalidasi [Longitude, Latitude]
+    // Inisialisasi Peta TomTom Statis dengan koordinat profil yang sudah divalidasi [Longitude, Latitude]
     initStaticMap(userLatitude, userLongitude);
 
     // B. Ambil data keranjang dari localStorage
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // --- FUNGSI HELPER UNTUK EKSTRAK KOORDINAT DARI CATATAN ---
 function extractCoordinatesFromNote(catatan) {
-    let lat = 1.0084; // Default Karimun
+    let lat = 1.0084; 
     let lng = 103.4435;
 
     if (!catatan) return { lat, lng };
@@ -188,7 +188,6 @@ function initStaticMap(lat, lng) {
         if (isNaN(numLat)) numLat = 1.0084;
         if (isNaN(numLng)) numLng = 103.4435;
 
-        // Auto-correct jika lat/lng tertukar
         if (numLat < -90 || numLat > 90) {
             let temp = numLat;
             numLat = numLng;
@@ -204,7 +203,6 @@ function initStaticMap(lat, lng) {
         if (!mapContainer) return;
         mapContainer.innerHTML = '';
 
-        // TomTom membutuhkan format center: [Longitude, Latitude]
         const staticMap = tt.map({
             key: tomtomApiKey,
             container: 'static-map',
