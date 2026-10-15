@@ -308,10 +308,24 @@ function prosesPembayaranAkhir() {
                 id_transaksi: idTransaksi,
                 total_bayar: totalBayar,
                 nama_user: namaLogIn,
-                qr_code_url: ''
+                qr_code_url: '' // Kosong dulu, menunggu owner upload
             };
             localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
-            alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
+
+            // --- TRIGGER KIRIM PESAN WHATSAPP KE OWNER ---
+            const nomorOwner = "6281234567890"; // <-- Ganti dengan nomor WhatsApp Anda (awali dengan 62 tanpa tanda +)
+            const pesanWa = encodeURIComponent(
+                `🔔 *PESANAN QRIS BARU MASUK!*\n\n` +
+                `• No TRX: ${idTransaksi}\n` +
+                `• Nama: ${namaLogIn}\n` +
+                `• Total Tagihan: ${formatRupiah(totalBayar)}\n\n` +
+                `Silakan buat QRIS manual di GoPay Merchant, lalu upload gambar QRIS ke panel admin berdasarkan ID Transaksi tersebut.`
+            );
+
+            // Buka WhatsApp Web / Aplikasi ke nomor owner di tab baru
+            window.open(`https://api.whatsapp.com/send?phone=${nomorOwner}&text=${pesanWa}`, '_blank');
+
+            alert("Pesanan QRIS dibuat. Mohon tunggu sebentar, halaman pembayaran sedang menyiapkan kode QR...");
             window.location.replace('qris_payment.html');
         } else {
             alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
