@@ -1,316 +1,137 @@
-// --- KONFIGURASI API ---
-var APPS_SCRIPT_URL = window.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
-var PROFILE_API_URL = window.PROFILE_API_URL || 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
-var tomtomApiKey = window.tomtomApiKey || 'eEDlFbYFgMqbARs7GYv39ogTM5MzYogE'; 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Konfirmasi Pesanan</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS Script CDN Resmi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- TomTom Maps SDK CSS -->
+    <link rel="stylesheet" type="text/css" href="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css">
+    <link rel="stylesheet" href="transaksi.css">
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen py-4 sm:py-6 px-3 sm:px-4 flex justify-center items-center">
 
-const namaLogIn = localStorage.getItem('namaUser') || localStorage.getItem('currentUser') || '';
-const currentUserId = localStorage.getItem('idUser') || localStorage.getItem('userId') || localStorage.getItem('id_user') || '';
-let currentCartData = [];
-let totalBayar = 0;
+    <div class="w-full max-w-md bg-white sm:rounded-3xl shadow-xl border border-slate-100 overflow-hidden min-h-screen sm:min-h-[820px] flex flex-col justify-between relative">
+        
+        <!-- Header Top Bar -->
+        <div class="w-full">
+            <header class="flex items-center justify-between p-4 bg-white/80 backdrop-blur-md sticky top-0 z-20 border-b border-slate-100">
+                <a href="chart.html" class="p-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </a>
+                <h1 class="text-base font-bold text-slate-900">Konfirmasi Pembayaran</h1>
+                <div class="w-9"></div>
+            </header>
 
-let map, marker;
-let userLatitude = localStorage.getItem('latitude') || '0.9103';
-let userLongitude = localStorage.getItem('longitude') || '103.4435';
-let cachedEmail = localStorage.getItem('emailUser') || localStorage.getItem('email') || "";
-
-function formatRupiah(number) {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-    // A. Ambil data koordinat awal dari Database Profil (Sheet Users)
-    if (currentUserId) {
-        try {
-            const profRes = await fetch(`${PROFILE_API_URL}?action=getUserProfile&id_user=${currentUserId}`);
-            const profResult = await profRes.json();
-            if (profResult.success && profResult.data) {
-                if (profResult.data.latitude) userLatitude = profResult.data.latitude;
-                if (profResult.data.longitude) userLongitude = profResult.data.longitude;
-                if (profResult.data.email) cachedEmail = profResult.data.email;
-                
-                localStorage.setItem('latitude', userLatitude);
-                localStorage.setItem('longitude', userLongitude);
-                if (profResult.data.email) localStorage.setItem('emailUser', profResult.data.email);
-                if (profResult.data.no_hp) localStorage.setItem('noHpUser', profResult.data.no_hp);
-            }
-        } catch (e) {
-            console.error("Gagal memuat profil koordinat dari database:", e);
-        }
-    }
-
-    userLatitude = localStorage.getItem('latitude') || userLatitude;
-    userLongitude = localStorage.getItem('longitude') || userLongitude;
-
-    let latNum = parseFloat(userLatitude) || 0.9103;
-    let lngNum = parseFloat(userLongitude) || 103.4435;
-
-    if (latNum < -90 || latNum > 90 || isNaN(latNum)) latNum = 0.9103;
-    if (lngNum < -180 || lngNum > 180 || isNaN(lngNum)) lngNum = 103.4435;
-
-    userLatitude = latNum;
-    userLongitude = lngNum;
-
-    // Inisialisasi Peta TomTom Interaktif dengan koordinat dari Database Profil
-    initInteractiveMap(userLatitude, userLongitude);
-
-    // B. Ambil data keranjang dari localStorage
-    const specificCacheKey = namaLogIn ? `cart_cache_${namaLogIn.trim()}` : '';
-    const rawCartData = 
-        localStorage.getItem('checkout_items') || 
-        (specificCacheKey ? localStorage.getItem(specificCacheKey) : null) || 
-        localStorage.getItem('cart') || 
-        localStorage.getItem('keranjang') || 
-        localStorage.getItem('cartItems') || 
-        localStorage.getItem('spg_cart') || '[]';
-
-    try {
-        currentCartData = JSON.parse(rawCartData);
-    } catch (e) {
-        currentCartData = [];
-    }
-
-    // C. Jika lokal kosong, tarik dari Server Transaksi
-    if ((!currentCartData || currentCartData.length === 0) && namaLogIn) {
-        const summaryContainer = document.getElementById('summary-items-container');
-        if (summaryContainer) {
-            summaryContainer.innerHTML = `<p style="text-align: center; color: #7f8c8d; font-size: 13px;">Memuat rincian pesanan dari server...</p>`;
-        }
-
-        try {
-            const response = await fetch(`${APPS_SCRIPT_URL}?action=getCart&user=${encodeURIComponent(namaLogIn.trim())}`);
-            const result = await response.json();
-            if (result && result.success && Array.isArray(result.data)) {
-                currentCartData = result.data;
-                localStorage.setItem('checkout_items', JSON.stringify(currentCartData));
-            }
-        } catch (err) {
-            console.error("Gagal mengambil data keranjang dari server:", err);
-        }
-    }
-
-    // D. Validasi keranjang
-    if (!currentCartData || currentCartData.length === 0) {
-        alert("Tidak ada data produk yang akan di-checkout atau keranjang kosong.");
-        window.location.replace('chart.html');
-        return;
-    }
-
-    // E. Hitung Total Bayar
-    totalBayar = 0;
-    currentCartData.forEach(item => {
-        const hargaRaw = item.total_harga ? item.total_harga.toString().replace(/[^0-9.-]/g, '') : ((item.harga_satuan || item.harga || 0) * (item.jumlah || item.qty || 1));
-        totalBayar += parseFloat(hargaRaw) || 0;
-    });
-
-    const totalBayarElem = document.getElementById('element-total-bayar');
-    if (totalBayarElem) {
-        totalBayarElem.innerText = formatRupiah(totalBayar);
-    }
-
-    // F. Render ringkasan item
-    const summaryContainer = document.getElementById('summary-items-container');
-    if (summaryContainer) {
-        summaryContainer.innerHTML = '';
-        currentCartData.forEach(item => {
-            const nama = item.nama_produk || item.nama || 'Produk';
-            const qty = parseInt(item.jumlah || item.qty || 1, 10);
-            const subtotal = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : ((item.harga_satuan || item.harga || 0) * qty);
-            const gambarProduk = item.gambar && item.gambar !== "" ? item.gambar : "https://via.placeholder.com/60?text=Menu";
-            
-            const itemRow = document.createElement('div');
-            itemRow.className = "flex items-center justify-between text-xs text-slate-700 py-2 border-b border-slate-100 last:border-none";
-            itemRow.style.cssText = "display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #eee; color: #555;";
-            itemRow.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <img src="${gambarProduk}" alt="${nama}" onerror="this.src='https://via.placeholder.com/60?text=Menu';" style="width: 40px; height: 40px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
-                    <div>
-                        <span style="font-weight: 600; color: #0f172a; display: block;">${nama}</span>
-                        <span style="font-size: 11px; color: #64748b;">Jumlah: ${qty}x</span>
+            <main class="p-4 space-y-4 pb-28">
+                <!-- Ringkasan Item Pesanan -->
+                <section class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+                    <div class="flex items-center gap-2 text-slate-900 font-bold text-sm pb-2 border-b border-slate-200/60">
+                        <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i>
+                        <h2>Ringkasan Pesanan</h2>
                     </div>
-                </div>
-                <span style="font-weight: 600; color: #10b981;">${formatRupiah(subtotal)}</span>
-            `;
-            summaryContainer.appendChild(itemRow);
-        });
-    }
 
-    if (window.lucide) lucide.createIcons();
-});
+                    <div id="summary-items-container" class="space-y-2 text-xs text-slate-600">
+                        <p class="text-center text-slate-400 py-2">Memuat rincian pesanan...</p>
+                    </div>
 
-// --- INISIALISASI PETA TOMTOM INTERAKTIF ---
-function initInteractiveMap(lat, lng) {
-    if (map) return;
+                    <div class="flex justify-between items-center pt-3 border-t border-dashed border-slate-200 font-bold text-sm">
+                        <span class="text-slate-700">Total Pembayaran</span>
+                        <span id="element-total-bayar" class="text-emerald-600 text-base">Rp 0</span>
+                    </div>
+                </section>
 
-    try {
-        map = tt.map({
-            key: tomtomApiKey,
-            container: 'static-map',
-            center: [lng, lat],
-            zoom: 15
-        });
+                <!-- Pilihan Metode Pembayaran -->
+                <section class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+                    <div class="flex items-center gap-2 text-slate-900 font-bold text-sm pb-1">
+                        <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i>
+                        <h2>Metode Pembayaran</h2>
+                    </div>
 
-        map.addControl(new tt.NavigationControl());
+                    <div class="space-y-2">
+                        <label class="payment-card flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 cursor-pointer transition-all">
+                            <div class="flex items-center gap-3">
+                                <input type="radio" id="pay-tunai" name="payment_method" value="Tunai" checked class="w-4 h-4 accent-emerald-600">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800">Tunai (COD)</p>
+                                    <p class="text-[11px] text-slate-400">Bayar langsung saat produk tiba</p>
+                                </div>
+                            </div>
+                            <i data-lucide="banknote" class="w-5 h-5 text-slate-400"></i>
+                        </label>
 
-        marker = new tt.Marker({ draggable: true, color: '#ef4444' })
-            .setLngLat([lng, lat])
-            .addTo(map);
+                        <label class="payment-card flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 cursor-pointer transition-all">
+                            <div class="flex items-center gap-3">
+                                <input type="radio" id="pay-qris" name="payment_method" value="QRIS" class="w-4 h-4 accent-emerald-600">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800">QRIS (Scan & Pay)</p>
+                                    <p class="text-[11px] text-slate-400">GoPay, OVO, Dana, ShopeePay, Bank</p>
+                                </div>
+                            </div>
+                            <i data-lucide="qr-code" class="w-5 h-5 text-slate-400"></i>
+                        </label>
+                    </div>
+                </section>
 
-        marker.on('dragend', function() {
-            var lngLat = marker.getLngLat();
-            userLatitude = lngLat.lat;
-            userLongitude = lngLat.lng;
-        });
+                <!-- Alamat Pengiriman (TomTom Map & Input Manual) -->
+                <section class="bg-slate-50/80 p-4 rounded-2xl border border-slate-100 space-y-3">
+                    <div class="flex items-center gap-2 text-slate-900 font-bold text-sm pb-1">
+                        <i data-lucide="map-pin" class="w-4 h-4 text-emerald-600"></i>
+                        <h2>Alamat Pengiriman</h2>
+                    </div>
 
-        map.on('click', function(e) {
-            var lngLat = e.lngLat;
-            marker.setLngLat(lngLat);
-            userLatitude = lngLat.lat;
-            userLongitude = lngLat.lng;
-        });
+                    <!-- TomTom Map Box Container -->
+                    <div class="static-map-box relative w-full h-36 rounded-xl overflow-hidden border border-slate-200 shadow-inner">
+                        <div id="static-map" class="w-full h-full"></div>
+                    </div>
 
-        setTimeout(() => {
-            map.resize();
-        }, 300);
+                    <!-- Tombol GPS & Hint Peta -->
+                    <button type="button" onclick="pusatkanKePosisiGPS()" class="w-full py-2 px-3 bg-blue-50 text-blue-600 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border border-blue-100 transition-all hover:bg-blue-100">
+                        <i data-lucide="locate-fixed" class="w-4 h-4"></i>
+                        <span>Gunakan Lokasi GPS Saya</span>
+                    </button>
 
-    } catch (err) {
-        console.error("Gagal menginisialisasi peta interaktif TomTom:", err);
-    }
-}
+                    <!-- Input Manual Nama Jalan / Patokan -->
+                    <div class="space-y-1">
+                        <label for="input-nama-jalan" class="text-xs font-semibold text-slate-600 block">Nama Jalan / Patokan / No. Rumah</label>
+                        <div class="relative flex items-center">
+                            <span class="absolute left-3 text-slate-400">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </span>
+                            <input type="text" id="input-nama-jalan" placeholder="Contoh: Jl. Poros, Gang Melati, Dekat Masjid..." class="w-full py-2.5 pl-9 pr-3 text-xs bg-white border border-slate-200 rounded-xl text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all">
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
 
-// --- FUNGSI GPS TOMBOL GEOLOCATION ---
-function pusatkanKePosisiGPS() {
-    if (!navigator.geolocation) {
-        alert("Browser Anda tidak mendukung fitur Geolocation.");
-        return;
-    }
+        <!-- Sticky Floating Action Footer -->
+        <footer class="fixed sm:absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 shadow-lg z-30">
+            <button type="button" id="btn-proses-bayar" onclick="prosesPembayaranAkhir()" class="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-sm font-bold rounded-xl transition-all shadow-md shadow-slate-900/10 flex items-center justify-center gap-2">
+                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <span>Konfirmasi & Bayar Sekarang</span>
+            </button>
+        </footer>
 
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            var lat = position.coords.latitude;
-            var lng = position.coords.longitude;
-            userLatitude = lat;
-            userLongitude = lng;
+    </div>
 
-            if (map && marker) {
-                map.setCenter([lng, lat]);
-                map.setZoom(16);
-                marker.setLngLat([lng, lat]);
-            }
-
-            alert("Posisi peta berhasil diperbarui ke lokasi GPS Anda!");
-        },
-        function(error) {
-            alert("Gagal mendeteksi GPS. Pastikan izin lokasi/GPS aktif.");
-            console.error(error);
-        },
-        { timeout: 15000, enableHighAccuracy: true, maximumAge: 0 }
-    );
-}
-
-// --- FUNGSI PROSES PEMBAYARAN AKHIR ---
-function prosesPembayaranAkhir() {
-    const btnSubmit = document.getElementById('btn-proses-bayar');
-    const inputNamaJalan = document.getElementById('input-nama-jalan');
-    const userNamaJalanInput = inputNamaJalan ? inputNamaJalan.value.trim() : '';
-
-    if (!userNamaJalanInput) {
-        alert("Silakan isi Nama Jalan / Patokan alamat pengiriman terlebih dahulu.");
-        if (inputNamaJalan) inputNamaJalan.focus();
-        return;
-    }
-
-    const selectedRadio = document.querySelector('input[name="payment_method"]:checked');
-    const metodePembayaran = selectedRadio ? selectedRadio.value : 'Tunai';
-
-    if (!confirm(`Konfirmasi pemesanan sebesar ${formatRupiah(totalBayar)} dengan metode ${metodePembayaran}?`)) {
-        return;
-    }
-
-    if (btnSubmit) {
-        btnSubmit.disabled = true;
-        btnSubmit.innerText = "Memproses Pesanan...";
-    }
-
-    const isTunai = metodePembayaran.toLowerCase() === 'tunai';
-    const statusAwal = isTunai ? 'Sedang Dikemas' : 'Belum Bayar';
-    const idTransaksi = 'TRX-' + Date.now();
-
-    const userInfo = {
-        id_user: currentUserId,
-        nama: namaLogIn,
-        email: cachedEmail,
-        no_hp: localStorage.getItem('noHpUser') || '',
-        latitude: userLatitude,
-        longitude: userLongitude,
-        nama_jalan: userNamaJalanInput
-    };
-
-    const formattedItems = currentCartData.map(item => {
-        const qty = parseInt(item.jumlah || item.qty || 1, 10);
-        const harga = parseFloat(item.harga_satuan || item.harga || 0);
-        const total = item.total_harga ? parseFloat(item.total_harga.toString().replace(/[^0-9.-]/g, '')) : (harga * qty);
-
-        return {
-            id_produk: item.id_produk || '',
-            nama_produk: item.nama_produk || item.nama || 'Produk',
-            jumlah: qty,
-            harga_satuan: harga,
-            subtotal: total,
-            gambar: item.gambar || ''
-        };
-    });
-
-    const payload = {
-        action: "createTransaction",
-        user_info: userInfo,
-        id_transaksi: idTransaksi,
-        total_bayar: totalBayar,
-        metode_pembayaran: metodePembayaran,
-        status: statusAwal,
-        catatan: `Alamat: ${userNamaJalanInput} (Lat: ${userLatitude}, Lng: ${userLongitude})`, 
-        items: formattedItems
-    };
-
-    fetch(APPS_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(() => {
-        localStorage.removeItem('cart');
-        localStorage.removeItem('keranjang');
-        localStorage.removeItem('cartItems');
-        localStorage.removeItem('spg_cart');
-        localStorage.removeItem('checkout_items');
-        if (namaLogIn) localStorage.removeItem(`cart_cache_${namaLogIn.trim()}`);
-        if (window.updateCartBadge) window.updateCartBadge();
-
-        localStorage.setItem('last_transaction_id', idTransaksi);
-
-        if (!isTunai) {
-            const qrisData = {
-                id_transaksi: idTransaksi,
-                total_bayar: totalBayar,
-                nama_user: namaLogIn,
-                qr_code_url: ''
-            };
-            localStorage.setItem('active_qris_trx', JSON.stringify(qrisData));
-            alert("Pesanan dibuat. Silakan selesaikan pembayaran QRIS.");
-            window.location.replace('qris_payment.html');
-        } else {
-            alert("Pesanan berhasil dibuat! Status pesanan: Sedang Dikemas.");
-            window.location.replace('order.html?trx=' + encodeURIComponent(idTransaksi));
-        }
-    })
-    .catch(err => {
-        console.error("Gagal memproses transaksi:", err);
-        alert("Terjadi kesalahan koneksi saat memproses transaksi.");
-        if (btnSubmit) {
-            btnSubmit.disabled = false;
-            btnSubmit.innerText = "Konfirmasi & Bayar Sekarang";
-        }
-    });
-}
+   <!-- TomTom Maps SDK JS -->
+   <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
+   <script src="script_transaksi.js"></script>
+   <script>
+       document.addEventListener('DOMContentLoaded', () => {
+           if (window.lucide) lucide.createIcons();
+       });
+   </script>
+</body>
+</html>
