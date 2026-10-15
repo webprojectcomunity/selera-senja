@@ -3,6 +3,7 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmD
 
 let currentProduct = null;
 let qty = 1;
+let fullDescriptionText = ""; // Variabel penyimpan teks deskripsi asli
 
 document.addEventListener('DOMContentLoaded', async () => {
     // --- LOGIKA PROTEKSI SESI ---
@@ -53,17 +54,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 3. Ambil data terbaru dari API di background (atau fetch langsung jika cache kosong)
+    // 3. Ambil data terbaru dari API di background
     try {
         const response = await fetch(APPS_SCRIPT_URL + '?action=getProducts');
         const result = await response.json();
         
         if (result.success && Array.isArray(result.data)) {
             productList = result.data;
-            // Perbarui cache di localStorage
             localStorage.setItem('product_cache', JSON.stringify(productList));
             
-            // Cari ulang produk dengan data paling fresh dari server
             currentProduct = findProductById(productList);
             if (currentProduct) {
                 renderProduct(currentProduct);
@@ -92,13 +91,11 @@ function renderProduct(item) {
         return foundKey ? item[foundKey] : '';
     };
 
-    // Kosongkan atau beri placeholder sementara untuk mencegah gambar produk sebelumnya tampil
     const imgElement = document.getElementById('img-produk');
     if (imgElement) {
-        imgElement.src = ''; // Bersihkan gambar lama
+        imgElement.src = ''; 
     }
 
-    // Mengambil harga mentah dari sheet dan membersihkan karakter non-angka
     const hargaRaw = getVal('harga').toString().replace(/[^0-9]/g, '');
     const hargaSatuan = parseFloat(hargaRaw) || 0;
 
@@ -106,20 +103,50 @@ function renderProduct(item) {
     document.getElementById('nama-produk').innerText = getVal('nama') || 'Tanpa Nama';
     
     // Tampilkan Deskripsi Produk dari kolom spreadsheet (Kolom D / 'deskripsi')
+    fullDescriptionText = getVal('deskripsi') || 'Tidak ada deskripsi tersedia untuk produk ini.';
     const deskripsiElem = document.getElementById('deskripsi-produk');
+    const btnToggle = document.getElementById('btn-toggle-deskripsi');
+
     if (deskripsiElem) {
-        deskripsiElem.innerText = getVal('deskripsi') || 'Tidak ada deskripsi tersedia untuk produk ini.';
+        deskripsiElem.innerText = fullDescriptionText;
+        deskripsiElem.classList.remove('expanded');
+        
+        // Logika: Tampilkan tombol "Baca Selengkapnya" hanya jika teks deskripsi cukup panjang (> 90 karakter)
+        if (btnToggle) {
+            if (fullDescriptionText.length > 90) {
+                btnToggle.style.display = 'inline-block';
+                btnToggle.innerText = 'Baca Selengkapnya';
+            } else {
+                btnToggle.style.display = 'none';
+            }
+        }
     }
 
     if (imgElement) {
         imgElement.src = getVal('gambar') || '';
     }
     
-    // MENGGUNAKAN TITIK UNTUK RIBUAN (Hasil: Rp 30.000)
     document.getElementById('harga-produk').innerText = 'Harga: Rp ' + hargaSatuan.toLocaleString('id-ID');
     
-    // Hitung total harga pertama kali saat data berhasil dimuat
     hitungDanTampilkanTotal();
+}
+
+// --- LOGIKA BACA SELENGKAPNYA / TUTUP ---
+function toggleDeskripsi() {
+    const deskripsiElem = document.getElementById('deskripsi-produk');
+    const btnToggle = document.getElementById('btn-toggle-deskripsi');
+
+    if (!deskripsiElem || !btnToggle) return;
+
+    const isExpanded = deskripsiElem.classList.contains('expanded');
+
+    if (isExpanded) {
+        deskripsiElem.classList.remove('expanded');
+        btnToggle.innerText = 'Baca Selengkapnya';
+    } else {
+        deskripsiElem.classList.add('expanded');
+        btnToggle.innerText = 'Tutup';
+    }
 }
 
 // --- LOGIKA HITUNG TOTAL ---
@@ -220,4 +247,5 @@ function logout() {
 
 window.updateQty = updateQty;
 window.submitOrder = submitOrder;
+window.toggleDeskripsi = toggleDeskripsi;
 window.logout = logout;
