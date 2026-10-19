@@ -15,11 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formLogin) formLogin.onsubmit = prosesLogin;
     if (formRegister) formRegister.onsubmit = prosesDaftar;
 
-    // Muat gambar dari Kolom F Sheet Produk untuk Slider Hero
+    // 1. Muat gambar dari Kolom F Sheet Produk untuk Slider Hero
     muatHeroSlider();
 
-    // Muat makanan terpopuler dari Sheet Transaksi
+    // 2. Muat makanan terpopuler dari Sheet Transaksi
     muatMakananTerpopuler();
+
+    // 3. Muat daftar produk dari Sheet Produk untuk Discover Menu
+    muatDaftarProdukMenu();
 });
 
 /********************************----------------
@@ -63,7 +66,7 @@ function jalankanSlider() {
     }, 3500);
 }
 
-/********************************----------------
+/****************----------------
  * MUAT MAKANAN TERPOPULER (DARI SHEET TRANSAKSI)
  ************************************************/
 async function muatMakananTerpopuler() {
@@ -98,7 +101,60 @@ async function muatMakananTerpopuler() {
     }
 }
 
-/********************************----------------
+/****************----------------
+ * MUAT DAFTAR PRODUK UNTUK MENU (DISCOVER MENU)
+ ************************************************/
+async function muatDaftarProdukMenu(searchQuery = '') {
+    const menuContainer = document.getElementById('menu-container');
+    if (!menuContainer) return;
+
+    try {
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=getProducts&search=${encodeURIComponent(searchQuery)}`);
+        const result = await response.json();
+
+        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+            let htmlContent = '';
+
+            result.data.forEach(item => {
+                let gambarUrl = item.gambar || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
+                
+                let hargaNominal = item.harga ? Number(item.harga.toString().replace(/\D/g, '')) : 0;
+                let hargaStr = hargaNominal > 0 ? `Rp ${hargaNominal.toLocaleString('id-ID')}` : 'Rp 0';
+                let namaProduk = item.nama || item.nama_produk || 'Produk';
+
+                htmlContent += `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
+                        <div>
+                            <img src="${gambarUrl}" alt="${namaProduk}" class="w-full h-44 object-cover rounded-xl mb-4" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300'">
+                            <h4 class="font-bold text-gray-800 text-lg mb-1">${namaProduk}</h4>
+                            <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-[#ea1d2c] font-extrabold text-lg">${hargaStr}</span>
+                            <span class="bg-red-50 text-[#ea1d2c] p-2 rounded-lg text-sm font-bold">+ Pesan</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            menuContainer.innerHTML = htmlContent;
+        } else {
+            menuContainer.innerHTML = `<p class="col-span-full text-center text-gray-500 py-8">Menu tidak ditemukan atau belum ada data produk.</p>`;
+        }
+    } catch (error) {
+        console.error("Gagal memuat daftar produk:", error);
+        menuContainer.innerHTML = `<p class="col-span-full text-center text-red-500 py-8">Gagal memuat data menu dari server.</p>`;
+    }
+}
+
+// Fungsi Pencarian Hero Section
+window.jalankanPencarianHero = function() {
+    const searchInput = document.getElementById('search-input');
+    const query = searchInput ? searchInput.value : '';
+    muatDaftarProdukMenu(query);
+};
+
+/****************----------------
  * LOGIKA MODAL POPUP LOGIN & GLOBAL EXPORT
  ************************************************/
 function openLoginModal() {
@@ -226,7 +282,7 @@ async function prosesDaftar(event) {
         if (result.success) {
             alert(result.message);
             switchTab('login');
-            document.getElementById('login-email').value, email;
+            document.getElementById('login-email').value = email;
             document.getElementById('reg-name').value = '';
             document.getElementById('reg-email').value = '';
             document.getElementById('reg-password').value = '';
@@ -244,7 +300,7 @@ async function prosesDaftar(event) {
     }
 }
 
-// ⚠️ WAJIB: Daftarkan fungsi ke objek window agar terbaca oleh atribut onclick di HTML
+// Daftarkan fungsi ke objek window agar terbaca oleh atribut onclick di HTML
 window.openLoginModal = openLoginModal;
 window.closeLoginModal = closeLoginModal;
 window.checkLoginOrRedirect = checkLoginOrRedirect;
