@@ -33,35 +33,35 @@
 
     <!-- Hero Section -->
     <section class="hero">
-        <img src="https://i.imgur.com/u7M25mU.png" alt="Decor Pizza" class="hero-decor-pizza">
         <div class="container hero-content">
             <div class="hero-text">
                 <span>Do Not Miss It!</span>
                 <h1>Pizza Taste Better Than Skinny Feels.</h1>
                 <p>Pesan makanan favoritmu dengan cepat, mudah, dan lezat langsung sampai di depan pintu rumahmu!</p>
                 
+                <!-- Input pencarian diberi id dan name untuk menghindari warning form field -->
                 <div class="search-bar">
-                    <input type="text" placeholder="Search menu...">
-                    <button>Check</button>
+                    <input type="text" id="search-input" name="search" placeholder="Search menu...">
+                    <button type="button">Check</button>
                 </div>
 
                 <div class="deal-section">
                     <span class="deal-title">Deal Of The Day. 15 : 30 : 45</span>
                     <div class="deal-items">
                         <div class="deal-item">
-                            <img src="https://i.imgur.com/b9S57H4.jpg" alt="Veg Chees Pizza">
+                            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300" alt="Veg Chees Pizza">
                             <div class="item-rating">⭐⭐⭐⭐⭐</div>
                             <div class="deal-item-name">Veg Chees Pizza</div>
                             <div class="deal-item-price">$49</div>
                         </div>
                         <div class="deal-item">
-                            <img src="https://i.imgur.com/o7R53YJ.jpg" alt="Veg Pasta">
+                            <img src="https://images.unsplash.com/photo-1621996346565-e3d5d628129a?w=300" alt="Veg Pasta">
                             <div class="item-rating">⭐⭐⭐⭐⭐</div>
                             <div class="deal-item-name">Veg Pasta</div>
                             <div class="deal-item-price">$39</div>
                         </div>
                         <div class="deal-item">
-                            <img src="https://i.imgur.com/lZ2yPjU.jpg" alt="Chicken Chili">
+                            <img src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300" alt="Chicken Chili">
                             <div class="item-rating">⭐⭐⭐⭐⭐</div>
                             <div class="deal-item-name">Chicken Chili</div>
                             <div class="deal-item-price">$69</div>
@@ -70,7 +70,7 @@
                 </div>
             </div>
             <div class="hero-image">
-                <img src="https://i.imgur.com/uC5UeE0.png" alt="Food Scooter" style="max-height: 500px;">
+                <!-- Gunakan gambar alternatif yang aktif jika diperlukan -->
             </div>
         </div>
     </section>
@@ -91,21 +91,20 @@
                     <div class="category-item"><span class="category-icon">🍰</span> Cakes</div>
                 </div>
                 <div class="menu-items">
-                    <!-- Item Menu (Diklik mengarahkan ke popup login jika belum login) -->
                     <div class="menu-item-card" onclick="checkLoginOrRedirect()">
-                        <img src="https://i.imgur.com/XwE4yQ6.jpg" alt="Noodle With Black Beans">
+                        <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300" alt="Noodle With Black Beans">
                         <div class="item-name">Noodle With Black Beans</div>
                         <div class="item-rating">⭐⭐⭐⭐⭐</div>
                         <div class="item-price">$39,00</div>
                     </div>
                     <div class="menu-item-card" onclick="checkLoginOrRedirect()">
-                        <img src="https://i.imgur.com/R3Z5N5r.jpg" alt="Japanese Noodles">
+                        <img src="https://images.unsplash.com/photo-1612927601601-6638404737fb?w=300" alt="Japanese Noodles">
                         <div class="item-name">Japanese Noodles</div>
                         <div class="item-rating">⭐⭐⭐⭐⭐</div>
                         <div class="item-price">$39,00</div>
                     </div>
                     <div class="menu-item-card" onclick="checkLoginOrRedirect()">
-                        <img src="https://i.imgur.com/79S6h6X.jpg" alt="Indian Noodles">
+                        <img src="https://images.unsplash.com/photo-1552611052-33e04de081de?w=300" alt="Indian Noodles">
                         <div class="item-name">Indian Noodles</div>
                         <div class="item-rating">⭐⭐⭐⭐⭐</div>
                         <div class="item-price">$39,00</div>
@@ -127,8 +126,8 @@
             <span class="close-btn" onclick="closeLoginModal()">&times;</span>
             
             <div class="auth-toggle">
-                <button class="toggle-btn active" id="btn-login" onclick="switchTab('login')">Masuk</button>
-                <button class="toggle-btn" id="btn-register" onclick="switchTab('register')">Daftar</button>
+                <button type="button" class="toggle-btn active" id="btn-login" onclick="switchTab('login')">Masuk</button>
+                <button type="button" class="toggle-btn" id="btn-register" onclick="switchTab('register')">Daftar</button>
             </div>
 
             <div class="form-container">
@@ -136,11 +135,11 @@
                 <form id="form-login" class="auth-form active">
                     <div class="input-group">
                         <label for="login-email">Email</label>
-                        <input type="email" id="login-email" placeholder="contoh@email.com" required>
+                        <input type="email" id="login-email" name="login-email" placeholder="contoh@email.com" required>
                     </div>
                     <div class="input-group">
                         <label for="login-password">Kata Sandi</label>
-                        <input type="password" id="login-password" placeholder="Masukkan kata sandi" required>
+                        <input type="password" id="login-password" name="login-password" placeholder="Masukkan kata sandi" required>
                     </div>
                     <a href="#" class="forgot-password">Lupa Kata Sandi?</a>
                     <button type="submit" class="submit-btn">Masuk Sekarang</button>
@@ -150,15 +149,15 @@
                 <form id="form-register" class="auth-form">
                     <div class="input-group">
                         <label for="reg-name">Nama Lengkap</label>
-                        <input type="text" id="reg-name" placeholder="Misal: Gita Astiya" required>
+                        <input type="text" id="reg-name" name="reg-name" placeholder="Misal: Gita Astiya" required>
                     </div>
                     <div class="input-group">
                         <label for="reg-email">Email</label>
-                        <input type="email" id="reg-email" placeholder="contoh@email.com" required>
+                        <input type="email" id="reg-email" name="reg-email" placeholder="contoh@email.com" required>
                     </div>
                     <div class="input-group">
                         <label for="reg-password">Kata Sandi</label>
-                        <input type="password" id="reg-password" placeholder="Minimal 6 karakter" minlength="6" required>
+                        <input type="password" id="reg-password" name="reg-password" placeholder="Minimal 6 karakter" minlength="6" required>
                     </div>
                     <button type="submit" class="submit-btn">Buat Akun</button>
                 </form>
