@@ -1,8 +1,11 @@
 /********************************----------------
  * KONFIGURASI & SESSION GUARD
  ************************************************/
+// URL Apps Script untuk Produk, Slider Hero, & Makanan Terpopuler
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
-const APPS_SCRIPT_URL ='https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
+
+// URL Apps Script untuk Login & Register (Database User / Sheet Users)
+const APPS_SCRIPT_URL_USER = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
 
 // Session guard: Jika user sudah login, langsung arahkan ke landing_page.html
 if (localStorage.getItem('namaUser')) {
@@ -26,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     muatDaftarProdukMenu();
 });
 
-/********************************----------------
+/****************--------------------------------
  * MUAT DAN JALANKAN HERO SLIDER DARI GOOGLE DRIVE SHEET PRODUK
  ************************************************/
 async function muatHeroSlider() {
@@ -67,7 +70,7 @@ function jalankanSlider() {
     }, 3500);
 }
 
-/****************----------------
+/****************--------------------------------
  * MUAT MAKANAN TERPOPULER (DARI SHEET TRANSAKSI)
  ************************************************/
 async function muatMakananTerpopuler() {
@@ -102,7 +105,7 @@ async function muatMakananTerpopuler() {
     }
 }
 
-/****************----------------
+/****************--------------------------------
  * MUAT DAFTAR PRODUK UNTUK MENU (DISCOVER MENU)
  ************************************************/
 async function muatDaftarProdukMenu(searchQuery = '') {
@@ -155,7 +158,7 @@ window.jalankanPencarianHero = function() {
     muatDaftarProdukMenu(query);
 };
 
-/****************----------------
+/****************--------------------------------
  * LOGIKA MODAL POPUP LOGIN & GLOBAL EXPORT
  ************************************************/
 function openLoginModal() {
@@ -233,7 +236,7 @@ async function prosesLogin(event) {
     }
 
     try {
-        const response = await fetch(APPS_SCRIPT_URL, {
+        const response = await fetch(APPS_SCRIPT_URL_USER, {
             method: 'POST',
             body: JSON.stringify({ action: 'login', email: email, password: password })
         });
@@ -273,7 +276,7 @@ async function prosesDaftar(event) {
     }
 
     try {
-        const response = await fetch(APPS_SCRIPT_URL, {
+        const response = await fetch(APPS_SCRIPT_URL_USER, {
             method: 'POST',
             body: JSON.stringify({ action: 'register', nama: nama, email: email, password: password })
         });
