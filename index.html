@@ -4,167 +4,257 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FastFood Delivery - Landing Page</title>
-    <link rel="stylesheet" href="index_style.css">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
 
     <!-- Header & Navigation -->
-    <header>
-        <div class="container">
-            <nav>
-                <div class="logo">
-                    <span class="logo-icon">🔥</span> FastFood<br>Delivery
+    <header class="bg-[#ea1d2c] text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex items-center space-x-2 font-bold text-xl sm:text-2xl leading-tight cursor-pointer">
+                    <span class="text-3xl">🔥</span>
+                    <div>FastFood<span class="block text-xs font-normal text-yellow-300">Delivery</span></div>
                 </div>
-                <ul class="nav-links">
-                    <li><a href="#" class="active">Home</a></li>
-                    <li><a href="#">About</a></li>
-                    <li><a href="#">Menu</a></li>
-                    <li><a href="#">Pages ▼</a></li>
-                    <li><a href="#">Blog</a></li>
-                </ul>
-                <div class="nav-icons">
-                    <!-- Icon User: Pemicu popup login -->
-                    <span class="icon" id="user-icon" onclick="openLoginModal()">👤</span>
-                    <span class="icon">🛒</span>
+
+                <!-- Desktop Nav Links -->
+                <nav class="hidden md:flex space-x-8 font-medium">
+                    <a href="#" class="text-yellow-300 hover:text-white transition">Home</a>
+                    <a href="#" class="hover:text-yellow-300 transition">About</a>
+                    <a href="#" class="hover:text-yellow-300 transition">Menu</a>
+                    <a href="#" class="hover:text-yellow-300 transition">Pages ▼</a>
+                    <a href="#" class="hover:text-yellow-300 transition">Blog</a>
+                </nav>
+
+                <!-- Nav Icons (User & Cart) -->
+                <div class="flex items-center space-x-5 text-xl">
+                    <button type="button" id="user-icon" onclick="openLoginModal()" class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Masuk / Akun">
+                        👤
+                    </button>
+                    <span class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Keranjang">
+                        🛒
+                    </span>
                 </div>
-            </nav>
+            </div>
         </div>
     </header>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="container hero-content">
-            <div class="hero-text">
-                <span>Do Not Miss It!</span>
-                <h1>Pizza Taste Better Than Skinny Feels.</h1>
-                <p>Pesan makanan favoritmu dengan cepat, mudah, dan lezat langsung sampai di depan pintu rumahmu!</p>
+    <section class="bg-[#ea1d2c] text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12">
+            
+            <!-- Hero Text & Search -->
+            <div class="w-full lg:w-1/2 z-10 text-center lg:text-left">
+                <span class="inline-block bg-yellow-400 text-gray-900 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider mb-4 shadow-sm">
+                    Do Not Miss It!
+                </span>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
+                    Pizza Taste Better Than Skinny Feels.
+                </h1>
+                <p class="text-base sm:text-lg text-gray-100 opacity-90 mb-8 max-w-xl mx-auto lg:mx-0">
+                    Pesan makanan favoritmu dengan cepat, mudah, dan lezat langsung sampai di depan pintu rumahmu!
+                </p>
                 
-                <!-- Input pencarian diberi id dan name untuk menghindari warning form field -->
-                <div class="search-bar">
-                    <input type="text" id="search-input" name="search" placeholder="Search menu...">
-                    <button type="button">Check</button>
+                <!-- Search Bar -->
+                <div class="flex items-center bg-white rounded-xl p-2 shadow-lg max-w-md mx-auto lg:mx-0 mb-10">
+                    <input type="text" id="search-input" name="search" placeholder="Search menu..." class="flex-grow px-4 py-2 text-gray-800 focus:outline-none text-sm sm:text-base">
+                    <button type="button" class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-6 py-2.5 rounded-lg transition text-sm sm:text-base cursor-pointer">
+                        Check
+                    </button>
                 </div>
 
-                <div class="deal-section">
-                    <span class="deal-title">Deal Of The Day. 15 : 30 : 45</span>
-                    <div class="deal-items">
-                        <div class="deal-item">
-                            <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=300" alt="Veg Chees Pizza">
-                            <div class="item-rating">⭐⭐⭐⭐⭐</div>
-                            <div class="deal-item-name">Veg Chees Pizza</div>
-                            <div class="deal-item-price">$49</div>
-                        </div>
-                        <div class="deal-item">
-                            <img src="https://images.unsplash.com/photo-1621996346565-e3d5d628129a?w=300" alt="Veg Pasta">
-                            <div class="item-rating">⭐⭐⭐⭐⭐</div>
-                            <div class="deal-item-name">Veg Pasta</div>
-                            <div class="deal-item-price">$39</div>
-                        </div>
-                        <div class="deal-item">
-                            <img src="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300" alt="Chicken Chili">
-                            <div class="item-rating">⭐⭐⭐⭐⭐</div>
-                            <div class="deal-item-name">Chicken Chili</div>
-                            <div class="deal-item-price">$69</div>
+                <!-- Deal Of The Day / Top Products Container -->
+                <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 max-w-lg mx-auto lg:mx-0">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-bold text-sm sm:text-base text-yellow-300">🔥 Deal Of The Day</span>
+                        <span class="text-xs bg-red-800 px-2 py-0.5 rounded text-white font-mono">15 : 30 : 45</span>
+                    </div>
+                    <!-- Data dinamis makanan terpopuler akan masuk ke sini melalui index.js -->
+                    <div class="deal-items grid grid-cols-3 gap-3">
+                        <!-- Default placeholder sebelum data dimuat -->
+                        <div class="bg-white text-gray-800 rounded-xl p-2 text-center shadow">
+                            <div class="animate-pulse bg-gray-200 h-16 rounded-lg mb-2"></div>
+                            <div class="h-3 bg-gray-200 rounded w-3/4 mx-auto mb-1"></div>
+                            <div class="h-3 bg-gray-200 rounded w-1/2 mx-auto"></div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="hero-image">
-                <!-- Gunakan gambar alternatif yang aktif jika diperlukan -->
+
+            <!-- Hero Image / Scooter -->
+            <div class="w-full lg:w-1/2 flex justify-center relative">
+                <div class="absolute -top-10 -left-10 w-72 h-72 bg-red-600 rounded-full filter blur-3xl opacity-50 -z-0"></div>
+                <img src="https://i.imgur.com/uC5UeE0.png" alt="Food Scooter" class="relative z-10 max-h-[350px] sm:max-h-[450px] object-contain drop-shadow-2xl">
             </div>
+
         </div>
     </section>
 
     <!-- Menu Section -->
-    <section class="menu">
-        <div class="container">
-            <div class="section-header">
-                <span>Our Menu</span>
-                <h2>Discover Menu</h2>
-            </div>
-            <div class="menu-content">
-                <div class="menu-categories">
-                    <div class="category-item active"><span class="category-icon">🍕</span> Pizza</div>
-                    <div class="category-item"><span class="category-icon">🍔</span> Burger</div>
-                    <div class="category-item"><span class="category-icon">🥤</span> Soft Drinks</div>
-                    <div class="category-item"><span class="category-icon">🍜</span> Noodles</div>
-                    <div class="category-item"><span class="category-icon">🍰</span> Cakes</div>
+    <section class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="text-center mb-12">
+            <span class="text-[#ea1d2c] font-bold text-sm tracking-widest uppercase block mb-2">Our Menu</span>
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Discover Menu</h2>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Categories Sidebar -->
+            <div class="w-full lg:w-72 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-fit">
+                <h3 class="font-bold text-lg mb-4 text-gray-700">Categories</h3>
+                <div class="space-y-2">
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-red-50 text-[#ea1d2c] font-semibold cursor-pointer transition">
+                        <span class="text-xl">🍕</span> Pizza
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-medium cursor-pointer transition">
+                        <span class="text-xl">🍔</span> Burger
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-medium cursor-pointer transition">
+                        <span class="text-xl">🥤</span> Soft Drinks
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-medium cursor-pointer transition">
+                        <span class="text-xl">🍜</span> Noodles
+                    </div>
+                    <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 text-gray-600 font-medium cursor-pointer transition">
+                        <span class="text-xl">🍰</span> Cakes
+                    </div>
                 </div>
-                <div class="menu-items">
-                    <div class="menu-item-card" onclick="checkLoginOrRedirect()">
-                        <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300" alt="Noodle With Black Beans">
-                        <div class="item-name">Noodle With Black Beans</div>
-                        <div class="item-rating">⭐⭐⭐⭐⭐</div>
-                        <div class="item-price">$39,00</div>
+            </div>
+
+            <!-- Menu Cards Grid -->
+            <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                <!-- Item 1 -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
+                    <div>
+                        <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300" alt="Noodle With Black Beans" class="w-full h-44 object-cover rounded-xl mb-4">
+                        <h4 class="font-bold text-gray-800 text-lg mb-1">Noodle With Black Beans</h4>
+                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
                     </div>
-                    <div class="menu-item-card" onclick="checkLoginOrRedirect()">
-                        <img src="https://images.unsplash.com/photo-1612927601601-6638404737fb?w=300" alt="Japanese Noodles">
-                        <div class="item-name">Japanese Noodles</div>
-                        <div class="item-rating">⭐⭐⭐⭐⭐</div>
-                        <div class="item-price">$39,00</div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-[#ea1d2c] font-extrabold text-lg">$39,00</span>
+                        <span class="bg-red-50 text-[#ea1d2c] p-2 rounded-lg text-sm font-bold">+ Pesan</span>
                     </div>
-                    <div class="menu-item-card" onclick="checkLoginOrRedirect()">
-                        <img src="https://images.unsplash.com/photo-1552611052-33e04de081de?w=300" alt="Indian Noodles">
-                        <div class="item-name">Indian Noodles</div>
-                        <div class="item-rating">⭐⭐⭐⭐⭐</div>
-                        <div class="item-price">$39,00</div>
+                </div>
+
+                <!-- Item 2 -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
+                    <div>
+                        <img src="https://images.unsplash.com/photo-1612927601601-6638404737fb?w=300" alt="Japanese Noodles" class="w-full h-44 object-cover rounded-xl mb-4">
+                        <h4 class="font-bold text-gray-800 text-lg mb-1">Japanese Noodles</h4>
+                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-[#ea1d2c] font-extrabold text-lg">$39,00</span>
+                        <span class="bg-red-50 text-[#ea1d2c] p-2 rounded-lg text-sm font-bold">+ Pesan</span>
+                    </div>
+                </div>
+
+                <!-- Item 3 -->
+                <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
+                    <div>
+                        <img src="https://images.unsplash.com/photo-1552611052-33e04de081de?w=300" alt="Indian Noodles" class="w-full h-44 object-cover rounded-xl mb-4">
+                        <h4 class="font-bold text-gray-800 text-lg mb-1">Indian Noodles</h4>
+                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-[#ea1d2c] font-extrabold text-lg">$39,00</span>
+                        <span class="bg-red-50 text-[#ea1d2c] p-2 rounded-lg text-sm font-bold">+ Pesan</span>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer>
-        <div class="container">
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8 text-center text-sm">
+        <div class="max-w-7xl mx-auto px-4">
             <p>&copy; 2026 FastFood Delivery. All rights reserved.</p>
         </div>
     </footer>
 
     <!-- POPUP LOGIN MODAL -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeLoginModal()">&times;</span>
+    <div id="loginModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md relative shadow-2xl animate-fade-in">
+            <!-- Close Button -->
+            <button type="button" onclick="closeLoginModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-2xl font-bold cursor-pointer">
+                &times;
+            </button>
             
-            <div class="auth-toggle">
-                <button type="button" class="toggle-btn active" id="btn-login" onclick="switchTab('login')">Masuk</button>
-                <button type="button" class="toggle-btn" id="btn-register" onclick="switchTab('register')">Daftar</button>
+            <!-- Tab Switcher -->
+            <div class="flex bg-gray-100 p-1.5 rounded-2xl mb-6">
+                <button type="button" class="flex-1 py-2.5 rounded-xl font-semibold text-sm transition active-tab bg-[#ea1d2c] text-white shadow-sm" id="btn-login" onclick="switchTab('login')">Masuk</button>
+                <button type="button" class="flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800" id="btn-register" onclick="switchTab('register')">Daftar</button>
             </div>
 
-            <div class="form-container">
+            <!-- Form Container -->
+            <div>
                 <!-- Form Login -->
-                <form id="form-login" class="auth-form active">
-                    <div class="input-group">
-                        <label for="login-email">Email</label>
-                        <input type="email" id="login-email" name="login-email" placeholder="contoh@email.com" required>
+                <form id="form-login" class="auth-form flex flex-col gap-4">
+                    <div>
+                        <label for="login-email" class="block text-xs font-bold text-gray-600 uppercase mb-1">Email</label>
+                        <input type="email" id="login-email" name="login-email" placeholder="contoh@email.com" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ea1d2c] text-sm">
                     </div>
-                    <div class="input-group">
-                        <label for="login-password">Kata Sandi</label>
-                        <input type="password" id="login-password" name="login-password" placeholder="Masukkan kata sandi" required>
+                    <div>
+                        <label for="login-password" class="block text-xs font-bold text-gray-600 uppercase mb-1">Kata Sandi</label>
+                        <input type="password" id="login-password" name="login-password" placeholder="Masukkan kata sandi" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ea1d2c] text-sm">
                     </div>
-                    <a href="#" class="forgot-password">Lupa Kata Sandi?</a>
-                    <button type="submit" class="submit-btn">Masuk Sekarang</button>
+                    <div class="text-right">
+                        <a href="#" class="text-xs text-[#ea1d2c] font-semibold hover:underline">Lupa Kata Sandi?</a>
+                    </div>
+                    <button type="submit" class="submit-btn w-full bg-[#ea1d2c] hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-red-500/30 cursor-pointer">
+                        Masuk Sekarang
+                    </button>
                 </form>
 
                 <!-- Form Daftar -->
-                <form id="form-register" class="auth-form">
-                    <div class="input-group">
-                        <label for="reg-name">Nama Lengkap</label>
-                        <input type="text" id="reg-name" name="reg-name" placeholder="Misal: Gita Astiya" required>
+                <form id="form-register" class="auth-form hidden flex-col gap-4">
+                    <div>
+                        <label for="reg-name" class="block text-xs font-bold text-gray-600 uppercase mb-1">Nama Lengkap</label>
+                        <input type="text" id="reg-name" name="reg-name" placeholder="Misal: Gita Astiya" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ea1d2c] text-sm">
                     </div>
-                    <div class="input-group">
-                        <label for="reg-email">Email</label>
-                        <input type="email" id="reg-email" name="reg-email" placeholder="contoh@email.com" required>
+                    <div>
+                        <label for="reg-email" class="block text-xs font-bold text-gray-600 uppercase mb-1">Email</label>
+                        <input type="email" id="reg-email" name="reg-email" placeholder="contoh@email.com" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ea1d2c] text-sm">
                     </div>
-                    <div class="input-group">
-                        <label for="reg-password">Kata Sandi</label>
-                        <input type="password" id="reg-password" name="reg-password" placeholder="Minimal 6 karakter" minlength="6" required>
+                    <div>
+                        <label for="reg-password" class="block text-xs font-bold text-gray-600 uppercase mb-1">Kata Sandi</label>
+                        <input type="password" id="reg-password" name="reg-password" placeholder="Minimal 6 karakter" minlength="6" required class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#ea1d2c] text-sm">
                     </div>
-                    <button type="submit" class="submit-btn">Buat Akun</button>
+                    <button type="submit" class="submit-btn w-full bg-[#ea1d2c] hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg shadow-red-500/30 cursor-pointer">
+                        Buat Akun
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Hubungkan file JavaScript eksternal Anda -->
     <script src="index.js"></script>
+    <script>
+        // Penyesuaian kecil untuk transisi tab popup di Tailwind
+        function switchTab(tab) {
+            const btnLogin = document.getElementById('btn-login');
+            const btnRegister = document.getElementById('btn-register');
+            const formLogin = document.getElementById('form-login');
+            const formRegister = document.getElementById('form-register');
+
+            if (tab === 'login') {
+                btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
+                btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
+                formLogin.classList.remove('hidden');
+                formLogin.classList.add('flex');
+                formRegister.classList.remove('flex');
+                formRegister.classList.add('hidden');
+            } else {
+                btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
+                btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
+                formRegister.classList.remove('hidden');
+                formRegister.classList.add('flex');
+                formLogin.classList.remove('flex');
+                formLogin.classList.add('hidden');
+            }
+        }
+    </script>
 </body>
 </html>
