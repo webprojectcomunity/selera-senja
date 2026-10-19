@@ -1,6 +1,9 @@
+/********************************----------------
+ * KONFIGURASI & SESSION GUARD
+ ************************************************/
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 
-// Session guard
+// Session guard: Jika user sudah login, langsung arahkan ke landing_page.html
 if (localStorage.getItem('namaUser')) {
     window.location.replace('landing_page.html');
 }
@@ -136,19 +139,27 @@ function switchTab(tab) {
     const formRegister = document.getElementById('form-register');
 
     if (tab === 'login') {
-        btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
-        btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
-        formLogin.classList.remove('hidden');
-        formLogin.classList.add('flex');
-        formRegister.classList.remove('flex');
-        formRegister.classList.add('hidden');
+        if (btnLogin) btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
+        if (btnRegister) btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
+        if (formLogin) {
+            formLogin.classList.remove('hidden');
+            formLogin.classList.add('flex');
+        }
+        if (formRegister) {
+            formRegister.classList.remove('flex');
+            formRegister.classList.add('hidden');
+        }
     } else {
-        btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
-        btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
-        formRegister.classList.remove('hidden');
-        formRegister.classList.add('flex');
-        formLogin.classList.remove('flex');
-        formLogin.classList.add('hidden');
+        if (btnRegister) btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
+        if (btnLogin) btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
+        if (formRegister) {
+            formRegister.classList.remove('hidden');
+            formRegister.classList.add('flex');
+        }
+        if (formLogin) {
+            formLogin.classList.remove('flex');
+            formLogin.classList.add('hidden');
+        }
     }
 }
 
@@ -232,3 +243,11 @@ async function prosesDaftar(event) {
         }
     }
 }
+
+/********************************----------------
+ * DAFTARKAN KE GLOBAL SCOPE (MENCEGAH ERROR ONCLICK)
+ ************************************************/
+window.openLoginModal = openLoginModal;
+window.closeLoginModal = closeLoginModal;
+window.checkLoginOrRedirect = checkLoginOrRedirect;
+window.switchTab = switchTab;
