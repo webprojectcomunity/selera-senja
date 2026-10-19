@@ -6,6 +6,22 @@
     <title>FastFood Delivery - Landing Page</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        /* Animation Fade Smooth untuk Image Slider */
+        .hero-slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+        .hero-slide.active {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans antialiased">
 
@@ -13,13 +29,11 @@
     <header class="bg-[#ea1d2c] text-white shadow-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
-                <!-- Logo -->
                 <div class="flex items-center space-x-2 font-bold text-xl sm:text-2xl leading-tight cursor-pointer">
                     <span class="text-3xl">🔥</span>
                     <div>FastFood<span class="block text-xs font-normal text-yellow-300">Delivery</span></div>
                 </div>
 
-                <!-- Desktop Nav Links -->
                 <nav class="hidden md:flex space-x-8 font-medium">
                     <a href="#" class="text-yellow-300 hover:text-white transition">Home</a>
                     <a href="#" class="hover:text-yellow-300 transition">About</a>
@@ -28,7 +42,6 @@
                     <a href="#" class="hover:text-yellow-300 transition">Blog</a>
                 </nav>
 
-                <!-- Nav Icons (User & Cart) -->
                 <div class="flex items-center space-x-5 text-xl">
                     <button type="button" id="user-icon" onclick="openLoginModal()" class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Masuk / Akun">
                         👤
@@ -41,19 +54,29 @@
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="bg-[#ea1d2c] text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12">
+    <!-- Hero Section dengan Dynamic Background Slider -->
+    <section class="relative bg-gray-900 text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-[500px]">
+        
+        <!-- CONTAINER DYNAMIC SLIDER -->
+        <div id="hero-slider-container" class="absolute inset-0 w-full h-full z-0">
+            <!-- Default Slide Awal jika belum termuat -->
+            <div class="hero-slide active bg-gradient-to-r from-red-700 to-red-900"></div>
+        </div>
+        
+        <!-- DARK OVERLAY (Agar teks putih tetap terbaca & kontras) -->
+        <div class="absolute inset-0 bg-gradient-to-r from-red-900/90 via-red-900/80 to-black/70 z-1"></div>
+
+        <!-- HERO CONTENT -->
+        <div class="relative z-10 max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12">
             
-            <!-- Hero Text & Search -->
-            <div class="w-full lg:w-1/2 z-10 text-center lg:text-left">
+            <div class="w-full lg:w-1/2 text-center lg:text-left">
                 <span class="inline-block bg-yellow-400 text-gray-900 font-bold px-3 py-1 rounded-full text-xs uppercase tracking-wider mb-4 shadow-sm">
                     Do Not Miss It!
                 </span>
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6">
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 drop-shadow-md">
                     Pizza Taste Better Than Skinny Feels.
                 </h1>
-                <p class="text-base sm:text-lg text-gray-100 opacity-90 mb-8 max-w-xl mx-auto lg:mx-0">
+                <p class="text-base sm:text-lg text-gray-100 opacity-90 mb-8 max-w-xl mx-auto lg:mx-0 drop-shadow">
                     Pesan makanan favoritmu dengan cepat, mudah, dan lezat langsung sampai di depan pintu rumahmu!
                 </p>
                 
@@ -66,14 +89,12 @@
                 </div>
 
                 <!-- Deal Of The Day / Top Products Container -->
-                <div class="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 max-w-lg mx-auto lg:mx-0">
+                <div class="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-white/20 max-w-lg mx-auto lg:mx-0 shadow-2xl">
                     <div class="flex justify-between items-center mb-3">
-                        <span class="font-bold text-sm sm:text-base text-yellow-300">🔥 Deal Of The Day</span>
+                        <span class="font-bold text-sm sm:text-base text-yellow-300">🔥 Makanan Paling Sering Diorder</span>
                         <span class="text-xs bg-red-800 px-2 py-0.5 rounded text-white font-mono">15 : 30 : 45</span>
                     </div>
-                    <!-- Data dinamis makanan terpopuler akan masuk ke sini melalui index.js -->
                     <div class="deal-items grid grid-cols-3 gap-3">
-                        <!-- Default placeholder sebelum data dimuat -->
                         <div class="bg-white text-gray-800 rounded-xl p-2 text-center shadow">
                             <div class="animate-pulse bg-gray-200 h-16 rounded-lg mb-2"></div>
                             <div class="h-3 bg-gray-200 rounded w-3/4 mx-auto mb-1"></div>
@@ -83,10 +104,8 @@
                 </div>
             </div>
 
-            <!-- Hero Image / Scooter -->
             <div class="w-full lg:w-1/2 flex justify-center relative">
-                <div class="absolute -top-10 -left-10 w-72 h-72 bg-red-600 rounded-full filter blur-3xl opacity-50 -z-0"></div>
-                <img src="https://i.imgur.com/uC5UeE0.png" alt="Food Scooter" class="relative z-10 max-h-[350px] sm:max-h-[450px] object-contain drop-shadow-2xl">
+                <img src="https://i.imgur.com/uC5UeE0.png" alt="Food Scooter" class="relative z-10 max-h-[350px] sm:max-h-[420px] object-contain drop-shadow-2xl">
             </div>
 
         </div>
@@ -100,7 +119,6 @@
         </div>
 
         <div class="flex flex-col lg:flex-row gap-8">
-            <!-- Categories Sidebar -->
             <div class="w-full lg:w-72 bg-white rounded-2xl p-6 shadow-sm border border-gray-100 h-fit">
                 <h3 class="font-bold text-lg mb-4 text-gray-700">Categories</h3>
                 <div class="space-y-2">
@@ -122,39 +140,12 @@
                 </div>
             </div>
 
-            <!-- Menu Cards Grid -->
-            <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                <!-- Item 1 -->
+            <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="menu-container">
+                <!-- Item Menu (jika diklik saat belum login akan membuka popup login) -->
                 <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
                     <div>
                         <img src="https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300" alt="Noodle With Black Beans" class="w-full h-44 object-cover rounded-xl mb-4">
                         <h4 class="font-bold text-gray-800 text-lg mb-1">Noodle With Black Beans</h4>
-                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
-                    </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-[#ea1d2c] font-extrabold text-lg">$39,00</span>
-                        <span class="bg-red-50 text-[#ea1d2c] p-2 rounded-lg text-sm font-bold">+ Pesan</span>
-                    </div>
-                </div>
-
-                <!-- Item 2 -->
-                <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
-                    <div>
-                        <img src="https://images.unsplash.com/photo-1612927601601-6638404737fb?w=300" alt="Japanese Noodles" class="w-full h-44 object-cover rounded-xl mb-4">
-                        <h4 class="font-bold text-gray-800 text-lg mb-1">Japanese Noodles</h4>
-                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
-                    </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-[#ea1d2c] font-extrabold text-lg">$39,00</span>
-                        <span class="bg-red-50 text-[#ea1d2c] p-2 rounded-lg text-sm font-bold">+ Pesan</span>
-                    </div>
-                </div>
-
-                <!-- Item 3 -->
-                <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
-                    <div>
-                        <img src="https://images.unsplash.com/photo-1552611052-33e04de081de?w=300" alt="Indian Noodles" class="w-full h-44 object-cover rounded-xl mb-4">
-                        <h4 class="font-bold text-gray-800 text-lg mb-1">Indian Noodles</h4>
                         <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
                     </div>
                     <div class="flex justify-between items-center mt-2">
@@ -175,21 +166,17 @@
 
     <!-- POPUP LOGIN MODAL -->
     <div id="loginModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md relative shadow-2xl animate-fade-in">
-            <!-- Close Button -->
+        <div class="bg-white rounded-3xl p-6 sm:p-8 w-full max-w-md relative shadow-2xl">
             <button type="button" onclick="closeLoginModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-2xl font-bold cursor-pointer">
                 &times;
             </button>
             
-            <!-- Tab Switcher -->
             <div class="flex bg-gray-100 p-1.5 rounded-2xl mb-6">
-                <button type="button" class="flex-1 py-2.5 rounded-xl font-semibold text-sm transition active-tab bg-[#ea1d2c] text-white shadow-sm" id="btn-login" onclick="switchTab('login')">Masuk</button>
+                <button type="button" class="flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm" id="btn-login" onclick="switchTab('login')">Masuk</button>
                 <button type="button" class="flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800" id="btn-register" onclick="switchTab('register')">Daftar</button>
             </div>
 
-            <!-- Form Container -->
             <div>
-                <!-- Form Login -->
                 <form id="form-login" class="auth-form flex flex-col gap-4">
                     <div>
                         <label for="login-email" class="block text-xs font-bold text-gray-600 uppercase mb-1">Email</label>
@@ -207,7 +194,6 @@
                     </button>
                 </form>
 
-                <!-- Form Daftar -->
                 <form id="form-register" class="auth-form hidden flex-col gap-4">
                     <div>
                         <label for="reg-name" class="block text-xs font-bold text-gray-600 uppercase mb-1">Nama Lengkap</label>
@@ -229,32 +215,6 @@
         </div>
     </div>
 
-    <!-- Hubungkan file JavaScript eksternal Anda -->
     <script src="index.js"></script>
-    <script>
-        // Penyesuaian kecil untuk transisi tab popup di Tailwind
-        function switchTab(tab) {
-            const btnLogin = document.getElementById('btn-login');
-            const btnRegister = document.getElementById('btn-register');
-            const formLogin = document.getElementById('form-login');
-            const formRegister = document.getElementById('form-register');
-
-            if (tab === 'login') {
-                btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
-                btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
-                formLogin.classList.remove('hidden');
-                formLogin.classList.add('flex');
-                formRegister.classList.remove('flex');
-                formRegister.classList.add('hidden');
-            } else {
-                btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
-                btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
-                formRegister.classList.remove('hidden');
-                formRegister.classList.add('flex');
-                formLogin.classList.remove('flex');
-                formLogin.classList.add('hidden');
-            }
-        }
-    </script>
 </body>
 </html>
