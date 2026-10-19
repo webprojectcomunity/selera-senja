@@ -26,33 +26,37 @@
 <body class="bg-gray-50 text-gray-800 font-sans antialiased">
 
     <!-- Header & Navigation -->
-    <header class="bg-[#ea1d2c] text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <div class="flex items-center space-x-2 font-bold text-xl sm:text-2xl leading-tight cursor-pointer">
-                    <span class="text-3xl">🔥</span>
-                    <div>FastFood<span class="block text-xs font-normal text-yellow-300">Delivery</span></div>
-                </div>
+    <!-- Header & Navigation -->
+<header class="bg-[#ea1d2c] text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+            <!-- Logo dengan Gambar Google Drive -->
+            <div class="flex items-center space-x-3 font-bold text-xl sm:text-2xl leading-tight cursor-pointer">
+                <img src="https://lh3.googleusercontent.com/d/1-4pFOONk4ywIDfJegY7O5yoEVUDehEZZ" alt="Logo FastFood" class="w-10 h-10 object-contain rounded-full bg-white p-1 shadow-md">
+                <div>FastFood<span class="block text-xs font-normal text-yellow-300">Delivery</span></div>
+            </div>
 
-                <nav class="hidden md:flex space-x-8 font-medium">
-                    <a href="#" class="text-yellow-300 hover:text-white transition">Home</a>
-                    <a href="#" class="hover:text-yellow-300 transition">About</a>
-                    <a href="#" class="hover:text-yellow-300 transition">Menu</a>
-                    <a href="#" class="hover:text-yellow-300 transition">Pages ▼</a>
-                    <a href="#" class="hover:text-yellow-300 transition">Blog</a>
-                </nav>
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex space-x-8 font-medium">
+                <a href="#" class="text-yellow-300 hover:text-white transition">Home</a>
+                <a href="#" class="hover:text-yellow-300 transition">About</a>
+                <a href="#" class="hover:text-yellow-300 transition">Menu</a>
+                <a href="#" class="hover:text-yellow-300 transition">Pages ▼</a>
+                <a href="#" class="hover:text-yellow-300 transition">Blog</a>
+            </nav>
 
-                <div class="flex items-center space-x-5 text-xl">
-                    <button type="button" id="user-icon" onclick="openLoginModal()" class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Masuk / Akun">
-                        👤
-                    </button>
-                    <span class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Keranjang">
-                        🛒
-                    </span>
-                </div>
+            <!-- Nav Icons (User & Cart) -->
+            <div class="flex items-center space-x-5 text-xl">
+                <button type="button" id="user-icon" onclick="openLoginModal()" class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Masuk / Akun">
+                    👤
+                </button>
+                <span class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Keranjang">
+                    🛒
+                </span>
             </div>
         </div>
-    </header>
+    </div>
+</header>
 
     <!-- Hero Section dengan Dynamic Background Slider -->
     <section class="relative bg-gray-900 text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-[500px]">
