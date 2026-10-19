@@ -1,11 +1,11 @@
-/********************************----------------
+/****************--------------------------------
  * KONFIGURASI & SESSION GUARD
  ************************************************/
-// 1. URL Apps Script khusus untuk Produk, Slider Hero, & Makanan Terpopuler
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
+// 1. URL Apps Script khusus untuk Database User (Login, Register, Keranjang, Transaksi)
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
 
-// 2. URL Apps Script khusus untuk User (Login & Register)
-const APPS_SCRIPT_URL_USER = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
+// 2. URL Apps Script khusus untuk Data Produk, Slider Hero, & Menu
+const APPS_SCRIPT_URL_API = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 
 // Session guard: Jika user sudah login, langsung arahkan ke landing_page.html
 if (localStorage.getItem('namaUser')) {
@@ -19,22 +19,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formLogin) formLogin.onsubmit = prosesLogin;
     if (formRegister) formRegister.onsubmit = prosesDaftar;
 
-    // 1. Muat gambar dari Kolom F Sheet Produk untuk Slider Hero
+    // Muat slider hero dari API Produk
     muatHeroSlider();
 
-    // 2. Muat makanan terpopuler dari Sheet Transaksi
+    // Muat makanan terpopuler dari API Produk
     muatMakananTerpopuler();
 
-    // 3. Muat daftar produk dari Sheet Produk untuk Discover Menu
+    // Muat daftar menu produk dari API Produk
     muatDaftarProdukMenu();
 });
 
 /****************--------------------------------
- * MUAT DAN JALANKAN HERO SLIDER DARI GOOGLE DRIVE SHEET PRODUK
+ * HELPER: Konversi URL Google Drive ke Thumbnail
+ ************************************************/
+function convertDriveUrl(url) {
+    if (!url) return 'https://via.placeholder.com/300x200?text=No+Image';
+    try {
+        const match = url.match(/id=([^&]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        return match && match[1] ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` : url;
+    } catch (e) { return url; }
+}
+
+/****************--------------------------------
+ * MUAT DAN JALANKAN HERO SLIDER (MENGGUNAKAN APPS_SCRIPT_URL_API)
  ************************************************/
 async function muatHeroSlider() {
     try {
-        const response = await fetch(`${APPS_SCRIPT_URL}?action=getHeroSlides`);
+        const response = await fetch(`${APPS_SCRIPT_URL_API}?action=getHeroSlides`);
         const result = await response.json();
 
         if (result.success && result.data && result.data.length > 0) {
@@ -44,12 +55,11 @@ async function muatHeroSlider() {
             let slidesHtml = '';
             result.data.forEach((imgUrl, index) => {
                 const activeClass = index === 0 ? 'active' : '';
-                slidesHtml += `<div class="hero-slide ${activeClass}" style="background-image: url('${imgUrl}');"></div>`;
+                const finalUrl = convertDriveUrl(imgUrl);
+                slidesHtml += `<div class="hero-slide ${activeClass}" style="background-image: url('${finalUrl}');"></div>`;
             });
 
             container.innerHTML = slidesHtml;
-
-            // Jalankan Slider berganti bergantian setiap 3,5 detik
             jalankanSlider();
         }
     } catch (error) {
@@ -71,11 +81,11 @@ function jalankanSlider() {
 }
 
 /****************--------------------------------
- * MUAT MAKANAN TERPOPULER (DARI SHEET TRANSAKSI)
+ * MUAT MAKANAN TERPOPULER (MENGGUNAKAN APPS_SCRIPT_URL_API)
  ************************************************/
 async function muatMakananTerpopuler() {
     try {
-        const response = await fetch(`${APPS_SCRIPT_URL}?action=getTopProducts`);
+        const response = await fetch(`${APPS_SCRIPT_URL_API}?action=getTopProducts`);
         const result = await response.json();
 
         if (result.success && result.data && result.data.length > 0) {
@@ -86,14 +96,15 @@ async function muatMakananTerpopuler() {
             const topItems = result.data.slice(0, 3);
 
             topItems.forEach(item => {
-                let gambarUrl = item.gambar || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
-                let hargaStr = item.harga_satuan ? `Rp ${Number(item.harga_satuan).toLocaleString('id-ID')}` : '$49';
+                let gambarUrl = convertDriveUrl(item.gambar || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300');
+                let hargaStr = item.harga_satuan ? `Rp ${Number(item.harga_satuan).toLocaleString('id-ID')}` : 'Rp 0';
+                let namaProduk = item.nama_produk || item.nama || 'Produk';
 
                 htmlContent += `
                     <div class="bg-white text-gray-800 rounded-xl p-2 text-center shadow transition transform hover:-translate-y-1 cursor-pointer" onclick="checkLoginOrRedirect()">
-                        <img src="${gambarUrl}" alt="${item.nama_produk}" class="w-full h-16 object-cover rounded-lg mb-2">
+                        <img src="${gambarUrl}" alt="${namaProduk}" class="w-full h-16 object-cover rounded-lg mb-2" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300'">
                         <div class="text-xs text-yellow-400 mb-1">⭐⭐⭐⭐⭐</div>
-                        <div class="font-bold text-xs truncate mb-1">${item.nama_produk}</div>
+                        <div class="font-bold text-xs truncate mb-1">${namaProduk}</div>
                         <div class="text-[#ea1d2c] font-bold text-xs">${hargaStr}</div>
                     </div>
                 `;
@@ -106,31 +117,35 @@ async function muatMakananTerpopuler() {
 }
 
 /****************--------------------------------
- * MUAT DAFTAR PRODUK UNTUK MENU (DISCOVER MENU)
+ * MUAT DAFTAR PRODUK DISCOVER MENU (MENGGUNAKAN APPS_SCRIPT_URL_API)
  ************************************************/
 async function muatDaftarProdukMenu(searchQuery = '') {
     const menuContainer = document.getElementById('menu-container');
     if (!menuContainer) return;
 
     try {
-        const response = await fetch(`${APPS_SCRIPT_URL}?action=getProducts&search=${encodeURIComponent(searchQuery)}`);
+        const response = await fetch(`${APPS_SCRIPT_URL_API}?action=getProducts&search=${encodeURIComponent(searchQuery)}`);
         const result = await response.json();
 
         if (result.success && Array.isArray(result.data) && result.data.length > 0) {
             let htmlContent = '';
 
             result.data.forEach(item => {
-                let gambarUrl = item.gambar || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
+                // Mendukung berbagai macam format keys dari objek hasil sheet
+                let gambarUrl = convertDriveUrl(item.gambar || item.Gambar || '');
+                let namaProduk = item.nama || item.Nama || item.nama_produk || 'Produk';
+                let deskripsi = item.deskripsi || item.Deskripsi || '-';
+                let hargaVal = item.harga || item.Harga || '0';
                 
-                let hargaNominal = item.harga ? Number(item.harga.toString().replace(/\D/g, '')) : 0;
+                let hargaNominal = Number(hargaVal.toString().replace(/\D/g, '')) || 0;
                 let hargaStr = hargaNominal > 0 ? `Rp ${hargaNominal.toLocaleString('id-ID')}` : 'Rp 0';
-                let namaProduk = item.nama || item.nama_produk || 'Produk';
 
                 htmlContent += `
                     <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
                         <div>
                             <img src="${gambarUrl}" alt="${namaProduk}" class="w-full h-44 object-cover rounded-xl mb-4" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300'">
                             <h4 class="font-bold text-gray-800 text-lg mb-1">${namaProduk}</h4>
+                            <p class="text-xs text-gray-500 mb-2 line-clamp-2">${deskripsi}</p>
                             <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
                         </div>
                         <div class="flex justify-between items-center mt-2">
@@ -223,6 +238,9 @@ function switchTab(tab) {
     }
 }
 
+/****************--------------------------------
+ * OTENTIKASI USER (MENGGUNAKAN APPS_SCRIPT_URL)
+ ************************************************/
 async function prosesLogin(event) {
     event.preventDefault();
     
@@ -236,7 +254,7 @@ async function prosesLogin(event) {
     }
 
     try {
-        const response = await fetch(APPS_SCRIPT_URL_USER, {
+        const response = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'login', email: email, password: password })
         });
@@ -247,6 +265,9 @@ async function prosesLogin(event) {
             localStorage.setItem('namaUser', result.user.nama);
             localStorage.setItem('idUser', result.user.id_user);
             localStorage.setItem('emailUser', result.user.email);
+            if (result.user.foto) {
+                localStorage.setItem('fotoUser', result.user.foto);
+            }
             window.location.replace('landing_page.html');
         } else {
             alert(result.message);
@@ -276,7 +297,7 @@ async function prosesDaftar(event) {
     }
 
     try {
-        const response = await fetch(APPS_SCRIPT_URL_USER, {
+        const response = await fetch(APPS_SCRIPT_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'register', nama: nama, email: email, password: password })
         });
