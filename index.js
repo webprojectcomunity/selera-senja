@@ -99,7 +99,7 @@ async function muatMakananTerpopuler() {
 }
 
 /********************************----------------
- * LOGIKA MODAL POPUP LOGIN
+ * LOGIKA MODAL POPUP LOGIN & GLOBAL EXPORT
  ************************************************/
 function openLoginModal() {
     const modal = document.getElementById('loginModal');
@@ -226,7 +226,7 @@ async function prosesDaftar(event) {
         if (result.success) {
             alert(result.message);
             switchTab('login');
-            document.getElementById('login-email').value = email;
+            document.getElementById('login-email').value, email;
             document.getElementById('reg-name').value = '';
             document.getElementById('reg-email').value = '';
             document.getElementById('reg-password').value = '';
@@ -244,9 +244,7 @@ async function prosesDaftar(event) {
     }
 }
 
-/********************************----------------
- * DAFTARKAN KE GLOBAL SCOPE (MENCEGAH ERROR ONCLICK)
- ************************************************/
+// ⚠️ WAJIB: Daftarkan fungsi ke objek window agar terbaca oleh atribut onclick di HTML
 window.openLoginModal = openLoginModal;
 window.closeLoginModal = closeLoginModal;
 window.checkLoginOrRedirect = checkLoginOrRedirect;
