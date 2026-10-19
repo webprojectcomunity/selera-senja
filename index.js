@@ -1,35 +1,14 @@
 /************************************************
- * SESSION GUARD (ANTI-BACK JIKA SUDAH LOGIN)
+ * KONFIGURASI & SESSION GUARD
  ************************************************/
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
+
+// Cek session saat halaman dimuat
 if (localStorage.getItem('namaUser')) {
     window.location.replace('landing_page.html');
 }
 
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
-
-/************************************************
- * JAVASCRIPT LOGIC UNTUK IMAGE SLIDER
- ************************************************/
-function jalankanSlider() {
-    const slides = document.querySelectorAll('.slide');
-    if (!slides || slides.length === 0) return;
-    
-    let indexSlideAktif = 0;
-
-    // Mengganti slide setiap 3000 ms (3 detik)
-    setInterval(() => {
-        slides[indexSlideAktif].classList.remove('active');
-        
-        indexSlideAktif = (indexSlideAktif + 1) % slides.length;
-        
-        slides[indexSlideAktif].classList.add('active');
-    }, 3000);
-}
-
-// Jalankan slider dan event binding begitu halaman selesai dimuat
 document.addEventListener('DOMContentLoaded', () => {
-    jalankanSlider();
-
     const formLogin = document.getElementById('form-login');
     const formRegister = document.getElementById('form-register');
 
@@ -37,6 +16,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formRegister) formRegister.onsubmit = prosesDaftar;
 });
 
+/************************************************
+ * LOGIKA MODAL POPUP LOGIN
+ ************************************************/
+function openLoginModal() {
+    const modal = document.getElementById('loginModal');
+    if (modal) modal.style.display = "flex";
+}
+
+function closeLoginModal() {
+    const modal = document.getElementById('loginModal');
+    if (modal) modal.style.display = "none";
+}
+
+// Tutup modal ketika mengklik area di luar kotak modal
+window.onclick = function(event) {
+    const modal = document.getElementById('loginModal');
+    if (event.target === modal) {
+        closeLoginModal();
+    }
+};
+
+// Cek apakah user sudah login sebelum mengakses menu
+function checkLoginOrRedirect() {
+    if (localStorage.getItem('namaUser')) {
+        window.location.href = 'landing_page.html';
+    } else {
+        openLoginModal();
+    }
+}
+
+/************************************************
+ * SWITCH TAB (MASUK / DAFTAR)
+ ************************************************/
 function switchTab(tab) {
     const btnLogin = document.getElementById('btn-login');
     const btnRegister = document.getElementById('btn-register');
@@ -59,6 +71,9 @@ function switchTab(tab) {
     }
 }
 
+/************************************************
+ * PROSES LOGIN & DAFTAR (API CALL)
+ ************************************************/
 async function prosesLogin(event) {
     event.preventDefault();
     
@@ -79,11 +94,11 @@ async function prosesLogin(event) {
 
         const result = await response.json();
 
-     if (result.success) {
-    localStorage.setItem('namaUser', result.user.nama);
-    localStorage.setItem('idUser', result.user.id_user);
-    localStorage.setItem('emailUser', result.user.email); // <--- Tambahkan baris ini
-    window.location.replace('landing_page.html');
+        if (result.success) {
+            localStorage.setItem('namaUser', result.user.nama);
+            localStorage.setItem('idUser', result.user.id_user);
+            localStorage.setItem('emailUser', result.user.email);
+            window.location.replace('landing_page.html');
         } else {
             alert(result.message);
         }
@@ -100,6 +115,7 @@ async function prosesLogin(event) {
 
 async function prosesDaftar(event) {
     event.preventDefault();
+
     const nama = document.getElementById('reg-name').value;
     const email = document.getElementById('reg-email').value;
     const password = document.getElementById('reg-password').value;
