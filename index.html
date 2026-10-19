@@ -26,37 +26,36 @@
 <body class="bg-gray-50 text-gray-800 font-sans antialiased">
 
     <!-- Header & Navigation -->
-    <!-- Header & Navigation -->
-<header class="bg-[#ea1d2c] text-white shadow-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-20">
-            <!-- Logo dengan Gambar Google Drive -->
-            <div class="flex items-center space-x-3 font-bold text-xl sm:text-2xl leading-tight cursor-pointer">
-                <img src="https://lh3.googleusercontent.com/d/1-4pFOONk4ywIDfJegY7O5yoEVUDehEZZ" alt="Logo FastFood" class="w-10 h-10 object-contain rounded-full bg-white p-1 shadow-md">
-                <div>FastFood<span class="block text-xs font-normal text-yellow-300">Delivery</span></div>
-            </div>
+    <header class="bg-[#ea1d2c] text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo dengan Gambar Google Drive -->
+                <div class="flex items-center space-x-3 font-bold text-xl sm:text-2xl leading-tight cursor-pointer">
+                    <img src="https://lh3.googleusercontent.com/d/1-4pFOONk4ywIDfJegY7O5yoEVUDehEZZ" alt="Logo FastFood" class="w-10 h-10 object-contain rounded-full bg-white p-1 shadow-md">
+                    <div>FastFood<span class="block text-xs font-normal text-yellow-300">Delivery</span></div>
+                </div>
 
-            <!-- Desktop Nav Links -->
-            <nav class="hidden md:flex space-x-8 font-medium">
-                <a href="#" class="text-yellow-300 hover:text-white transition">Home</a>
-                <a href="#" class="hover:text-yellow-300 transition">About</a>
-                <a href="#" class="hover:text-yellow-300 transition">Menu</a>
-                <a href="#" class="hover:text-yellow-300 transition">Pages ▼</a>
-                <a href="#" class="hover:text-yellow-300 transition">Blog</a>
-            </nav>
+                <!-- Desktop Nav Links -->
+                <nav class="hidden md:flex space-x-8 font-medium">
+                    <a href="#" class="text-yellow-300 hover:text-white transition">Home</a>
+                    <a href="#" class="hover:text-yellow-300 transition">About</a>
+                    <a href="#" class="hover:text-yellow-300 transition">Menu</a>
+                    <a href="#" class="hover:text-yellow-300 transition">Pages ▼</a>
+                    <a href="#" class="hover:text-yellow-300 transition">Blog</a>
+                </nav>
 
-            <!-- Nav Icons (User & Cart) -->
-            <div class="flex items-center space-x-5 text-xl">
-                <button type="button" id="user-icon" onclick="openLoginModal()" class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Masuk / Akun">
-                    👤
-                </button>
-                <span class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Keranjang">
-                    🛒
-                </span>
+                <!-- Nav Icons (User & Cart) -->
+                <div class="flex items-center space-x-5 text-xl">
+                    <button type="button" id="user-icon" onclick="openLoginModal()" class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Masuk / Akun">
+                        👤
+                    </button>
+                    <span class="p-2 rounded-full hover:bg-red-700 transition cursor-pointer" title="Keranjang">
+                        🛒
+                    </span>
+                </div>
             </div>
         </div>
-    </div>
-</header>
+    </header>
 
     <!-- Hero Section dengan Dynamic Background Slider -->
     <section class="relative bg-gray-900 text-white pt-10 pb-16 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-[500px]">
@@ -67,7 +66,7 @@
             <div class="hero-slide active bg-gradient-to-r from-red-700 to-red-900"></div>
         </div>
         
-        <!-- DARK OVERLAY (Agar teks putih tetap terbaca & kontras) -->
+        <!-- DARK OVERLAY -->
         <div class="absolute inset-0 bg-gradient-to-r from-red-900/90 via-red-900/80 to-black/70 z-1"></div>
 
         <!-- HERO CONTENT -->
@@ -86,8 +85,8 @@
                 
                 <!-- Search Bar -->
                 <div class="flex items-center bg-white rounded-xl p-2 shadow-lg max-w-md mx-auto lg:mx-0 mb-10">
-                    <input type="text" id="search-input" name="search" placeholder="Search menu..." class="flex-grow px-4 py-2 text-gray-800 focus:outline-none text-sm sm:text-base">
-                    <button type="button" class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-6 py-2.5 rounded-lg transition text-sm sm:text-base cursor-pointer">
+                    <input type="text" id="search-input" name="search" placeholder="Search menu..." class="flex-grow px-4 py-2 text-gray-800 focus:outline-none text-sm sm:text-base" onkeyup="if(event.key === 'Enter') jalankanPencarianHero()">
+                    <button type="button" onclick="jalankanPencarianHero()" class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold px-6 py-2.5 rounded-lg transition text-sm sm:text-base cursor-pointer">
                         Check
                     </button>
                 </div>
@@ -144,18 +143,10 @@
                 </div>
             </div>
 
+            <!-- Menu Cards Grid (Dinamis dari Spreadsheet) -->
             <div class="flex-grow grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="menu-container">
-                <!-- Item Menu (jika diklik saat belum login akan membuka popup login) -->
-                <div class="bg-white rounded-2xl p-4 shadow-sm hover:shadow-md transition border border-gray-100 cursor-pointer flex flex-col justify-between" onclick="checkLoginOrRedirect()">
-                    <div>
-                       <img src="https://lh3.googleusercontent.com/d/1-4pFOONk4ywIDfJegY7O5yoEVUDehEZZ" alt="Food Scooter" class="relative z-10 max-h-[350px] sm:max-h-[420px] object-contain drop-shadow-2xl">
-                        <h4 class="font-bold text-gray-800 text-lg mb-1">Noodle With Black Beans</h4>
-                        <div class="text-yellow-400 text-sm mb-2">⭐⭐⭐⭐⭐</div>
-                    </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-[#ea1d2c] font-extrabold text-lg">$39,00</span>
-                        <span class="bg-red-50 text-[#ea1d2c] p-2 rounded-lg text-sm font-bold">+ Pesan</span>
-                    </div>
+                <div class="col-span-full text-center py-10 text-gray-500 font-semibold">
+                    Memuat daftar menu produk...
                 </div>
             </div>
         </div>
