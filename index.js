@@ -32,16 +32,19 @@ async function muatMakananTerpopuler() {
             if (!dealItemsContainer) return;
 
             let htmlContent = '';
-            // Ambil maksimal 3 item teratas untuk bagian Deal Of The Day
             const topItems = result.data.slice(0, 3);
 
             topItems.forEach(item => {
-                let gambarUrl = item.gambar || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
+                // Pastikan URL gambar valid atau gunakan fallback gambar lokal/aman
+                let gambarUrl = (item.gambar && item.gambar.startsWith('http')) 
+                    ? item.gambar 
+                    : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80';
+                
                 let hargaStr = item.harga_satuan ? `Rp ${Number(item.harga_satuan).toLocaleString('id-ID')}` : '$49';
 
                 htmlContent += `
                     <div class="deal-item" onclick="checkLoginOrRedirect()" style="cursor: pointer;">
-                        <img src="${gambarUrl}" alt="${item.nama_produk}">
+                        <img src="${gambarUrl}" alt="${item.nama_produk}" crossorigin="anonymous">
                         <div class="item-rating">⭐⭐⭐⭐⭐</div>
                         <div class="deal-item-name">${item.nama_produk}</div>
                         <div class="deal-item-price">${hargaStr}</div>
@@ -52,36 +55,6 @@ async function muatMakananTerpopuler() {
         }
     } catch (error) {
         console.error("Gagal memuat makanan terpopuler:", error);
-    }
-}
-
-/********************************----------------
- * LOGIKA MODAL POPUP LOGIN
- *****************----------------***************/
-function openLoginModal() {
-    const modal = document.getElementById('loginModal');
-    if (modal) modal.style.display = "flex";
-}
-
-function closeLoginModal() {
-    const modal = document.getElementById('loginModal');
-    if (modal) modal.style.display = "none";
-}
-
-// Tutup modal ketika mengklik area di luar kotak modal
-window.onclick = function(event) {
-    const modal = document.getElementById('loginModal');
-    if (event.target === modal) {
-        closeLoginModal();
-    }
-};
-
-// Cek apakah user sudah login sebelum mengakses menu atau item makanan
-function checkLoginOrRedirect() {
-    if (localStorage.getItem('namaUser')) {
-        window.location.href = 'landing_page.html';
-    } else {
-        openLoginModal();
     }
 }
 
