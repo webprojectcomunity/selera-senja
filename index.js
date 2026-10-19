@@ -2,7 +2,7 @@
  * KONFIGURASI & SESSION GUARD
  ************************************************/
 // URL Apps Script untuk Produk, Slider Hero, & Makanan Terpopuler
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
 
 // URL Apps Script untuk Login & Register (Database User / Sheet Users)
 const APPS_SCRIPT_URL_USER = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
