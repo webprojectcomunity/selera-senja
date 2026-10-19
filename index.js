@@ -1,9 +1,9 @@
-/************************************************
+/********************************----------------
  * KONFIGURASI & SESSION GUARD
  ************************************************/
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 
-// Cek session saat halaman dimuat
+// Cek session guard: Jika user sudah login, langsung arahkan ke landing_page.html
 if (localStorage.getItem('namaUser')) {
     window.location.replace('landing_page.html');
 }
@@ -14,11 +14,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (formLogin) formLogin.onsubmit = prosesLogin;
     if (formRegister) formRegister.onsubmit = prosesDaftar;
+
+    // Panggil fungsi untuk memuat makanan terpopuler saat halaman dimuat
+    muatMakananTerpopuler();
 });
 
-/************************************************
- * LOGIKA MODAL POPUP LOGIN
+/********************************----------------
+ * AMBIL MAKANAN TERPOPULER / DEAL OF THE DAY
  ************************************************/
+async function muatMakananTerpopuler() {
+    try {
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=getTopProducts`);
+        const result = await response.json();
+
+        if (result.success && result.data && result.data.length > 0) {
+            const dealItemsContainer = document.querySelector('.deal-items');
+            if (!dealItemsContainer) return;
+
+            let htmlContent = '';
+            // Ambil maksimal 3 item teratas untuk bagian Deal Of The Day
+            const topItems = result.data.slice(0, 3);
+
+            topItems.forEach(item => {
+                let gambarUrl = item.gambar || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
+                let hargaStr = item.harga_satuan ? `Rp ${Number(item.harga_satuan).toLocaleString('id-ID')}` : '$49';
+
+                htmlContent += `
+                    <div class="deal-item" onclick="checkLoginOrRedirect()" style="cursor: pointer;">
+                        <img src="${gambarUrl}" alt="${item.nama_produk}">
+                        <div class="item-rating">⭐⭐⭐⭐⭐</div>
+                        <div class="deal-item-name">${item.nama_produk}</div>
+                        <div class="deal-item-price">${hargaStr}</div>
+                    </div>
+                `;
+            });
+            dealItemsContainer.innerHTML = htmlContent;
+        }
+    } catch (error) {
+        console.error("Gagal memuat makanan terpopuler:", error);
+    }
+}
+
+/********************************----------------
+ * LOGIKA MODAL POPUP LOGIN
+ *****************----------------***************/
 function openLoginModal() {
     const modal = document.getElementById('loginModal');
     if (modal) modal.style.display = "flex";
@@ -37,7 +76,7 @@ window.onclick = function(event) {
     }
 };
 
-// Cek apakah user sudah login sebelum mengakses menu
+// Cek apakah user sudah login sebelum mengakses menu atau item makanan
 function checkLoginOrRedirect() {
     if (localStorage.getItem('namaUser')) {
         window.location.href = 'landing_page.html';
@@ -46,7 +85,7 @@ function checkLoginOrRedirect() {
     }
 }
 
-/************************************************
+/********************************----------------
  * SWITCH TAB (MASUK / DAFTAR)
  ************************************************/
 function switchTab(tab) {
@@ -71,7 +110,7 @@ function switchTab(tab) {
     }
 }
 
-/************************************************
+/********************************----------------
  * PROSES LOGIN & DAFTAR (API CALL)
  ************************************************/
 async function prosesLogin(event) {
