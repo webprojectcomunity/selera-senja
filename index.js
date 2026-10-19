@@ -1,9 +1,6 @@
-/********************************----------------
- * KONFIGURASI & SESSION GUARD
- ************************************************/
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 
-// Cek session guard: Jika user sudah login, langsung arahkan ke landing_page.html
+// Session guard
 if (localStorage.getItem('namaUser')) {
     window.location.replace('landing_page.html');
 }
@@ -15,12 +12,56 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formLogin) formLogin.onsubmit = prosesLogin;
     if (formRegister) formRegister.onsubmit = prosesDaftar;
 
-    // Panggil fungsi untuk memuat makanan terpopuler saat halaman dimuat
+    // Muat gambar dari Kolom F Sheet Produk untuk Slider Hero
+    muatHeroSlider();
+
+    // Muat makanan terpopuler dari Sheet Transaksi
     muatMakananTerpopuler();
 });
 
 /********************************----------------
- * AMBIL MAKANAN TERPOPULER / DEAL OF THE DAY
+ * MUAT DAN JALANKAN HERO SLIDER DARI GOOGLE DRIVE SHEET PRODUK
+ ************************************************/
+async function muatHeroSlider() {
+    try {
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=getHeroSlides`);
+        const result = await response.json();
+
+        if (result.success && result.data && result.data.length > 0) {
+            const container = document.getElementById('hero-slider-container');
+            if (!container) return;
+
+            let slidesHtml = '';
+            result.data.forEach((imgUrl, index) => {
+                const activeClass = index === 0 ? 'active' : '';
+                slidesHtml += `<div class="hero-slide ${activeClass}" style="background-image: url('${imgUrl}');"></div>`;
+            });
+
+            container.innerHTML = slidesHtml;
+
+            // Jalankan Slider berganti bergantian setiap 3,5 detik
+            jalankanSlider();
+        }
+    } catch (error) {
+        console.error("Gagal memuat slider hero:", error);
+    }
+}
+
+function jalankanSlider() {
+    const slides = document.querySelectorAll('.hero-slide');
+    if (!slides || slides.length < 2) return;
+
+    let indexSlideAktif = 0;
+
+    setInterval(() => {
+        slides[indexSlideAktif].classList.remove('active');
+        indexSlideAktif = (indexSlideAktif + 1) % slides.length;
+        slides[indexSlideAktif].classList.add('active');
+    }, 3500);
+}
+
+/********************************----------------
+ * MUAT MAKANAN TERPOPULER (DARI SHEET TRANSAKSI)
  ************************************************/
 async function muatMakananTerpopuler() {
     try {
@@ -35,19 +76,15 @@ async function muatMakananTerpopuler() {
             const topItems = result.data.slice(0, 3);
 
             topItems.forEach(item => {
-                // Pastikan URL gambar valid atau gunakan fallback gambar lokal/aman
-                let gambarUrl = (item.gambar && item.gambar.startsWith('http')) 
-                    ? item.gambar 
-                    : 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80';
-                
+                let gambarUrl = item.gambar || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
                 let hargaStr = item.harga_satuan ? `Rp ${Number(item.harga_satuan).toLocaleString('id-ID')}` : '$49';
 
                 htmlContent += `
-                    <div class="deal-item" onclick="checkLoginOrRedirect()" style="cursor: pointer;">
-                        <img src="${gambarUrl}" alt="${item.nama_produk}" crossorigin="anonymous">
-                        <div class="item-rating">⭐⭐⭐⭐⭐</div>
-                        <div class="deal-item-name">${item.nama_produk}</div>
-                        <div class="deal-item-price">${hargaStr}</div>
+                    <div class="bg-white text-gray-800 rounded-xl p-2 text-center shadow transition transform hover:-translate-y-1 cursor-pointer" onclick="checkLoginOrRedirect()">
+                        <img src="${gambarUrl}" alt="${item.nama_produk}" class="w-full h-16 object-cover rounded-lg mb-2">
+                        <div class="text-xs text-yellow-400 mb-1">⭐⭐⭐⭐⭐</div>
+                        <div class="font-bold text-xs truncate mb-1">${item.nama_produk}</div>
+                        <div class="text-[#ea1d2c] font-bold text-xs">${hargaStr}</div>
                     </div>
                 `;
             });
@@ -59,33 +96,62 @@ async function muatMakananTerpopuler() {
 }
 
 /********************************----------------
- * SWITCH TAB (MASUK / DAFTAR)
+ * LOGIKA MODAL POPUP LOGIN
  ************************************************/
+function openLoginModal() {
+    const modal = document.getElementById('loginModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+}
+
+function closeLoginModal() {
+    const modal = document.getElementById('loginModal');
+    if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+    }
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('loginModal');
+    if (event.target === modal) {
+        closeLoginModal();
+    }
+};
+
+function checkLoginOrRedirect() {
+    if (localStorage.getItem('namaUser')) {
+        window.location.href = 'landing_page.html';
+    } else {
+        openLoginModal();
+    }
+}
+
 function switchTab(tab) {
     const btnLogin = document.getElementById('btn-login');
     const btnRegister = document.getElementById('btn-register');
     const formLogin = document.getElementById('form-login');
     const formRegister = document.getElementById('form-register');
 
-    if (!btnLogin || !btnRegister || !formLogin || !formRegister) return;
-
-    btnLogin.classList.remove('active');
-    btnRegister.classList.remove('active');
-    formLogin.classList.remove('active');
-    formRegister.classList.remove('active');
-
     if (tab === 'login') {
-        btnLogin.classList.add('active');
-        formLogin.classList.add('active');
+        btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
+        btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
+        formLogin.classList.remove('hidden');
+        formLogin.classList.add('flex');
+        formRegister.classList.remove('flex');
+        formRegister.classList.add('hidden');
     } else {
-        btnRegister.classList.add('active');
-        formRegister.classList.add('active');
+        btnRegister.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition bg-[#ea1d2c] text-white shadow-sm";
+        btnLogin.className = "flex-1 py-2.5 rounded-xl font-semibold text-sm transition text-gray-500 hover:text-gray-800";
+        formRegister.classList.remove('hidden');
+        formRegister.classList.add('flex');
+        formLogin.classList.remove('flex');
+        formLogin.classList.add('hidden');
     }
 }
 
-/********************************----------------
- * PROSES LOGIN & DAFTAR (API CALL)
- ************************************************/
 async function prosesLogin(event) {
     event.preventDefault();
     
