@@ -2,10 +2,10 @@
  * KONFIGURASI & SESSION GUARD
  ************************************************/
 // 1. URL Apps Script khusus untuk Database User (Login, Register, Keranjang, Transaksi)
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
 
 // 2. URL Apps Script khusus untuk Data Produk, Slider Hero, & Menu
-const APPS_SCRIPT_URL_API = 'https://script.google.com/macros/s/AKfycbwSCT3UhUj2-6VcXeDbBYAQDD-CjUouquTMxDnvjj8Y-eGBvo_hSfXnk0E6xGWszeGwmg/exec';
+const APPS_SCRIPT_URL_API = 'https://script.google.com/macros/s/AKfycbwBLIlk6lbANUmDwdUkMtldg0AB5aDD-9_7bAQJ6UAbcTHZeHwlnLluwyXIG2jWRxNX/exec';
 
 // Session guard: Jika user sudah login, langsung arahkan ke landing_page.html
 if (localStorage.getItem('namaUser')) {
